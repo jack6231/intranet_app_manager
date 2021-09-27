@@ -34,7 +34,7 @@ public class PackageViewModel {
     private String message;
 
     public PackageViewModel(Package aPackage, PathManager pathManager) {
-        this.downloadURL = pathManager.getBaseURL(false) + "p/" + aPackage.getId();
+        this.downloadURL = pathManager.getBaseURL(true) + "p/" + aPackage.getId();
         this.safeDownloadURL = pathManager.getBaseURL(true) + "p/" + aPackage.getId();
         this.iconURL = pathManager.getPackageResourceURL(aPackage, true) + "icon.png";
         this.id = aPackage.getId();
@@ -57,7 +57,7 @@ public class PackageViewModel {
             this.iOS = false;
             this.installURL = pathManager.getPackageResourceURL(aPackage, false) + aPackage.getFileName();
         }
-        this.previewURL = pathManager.getBaseURL(false) + "s/" + aPackage.getApp().getShortCode() + "?id=" + aPackage.getId();
+        this.previewURL = pathManager.getBaseURL(true) + "s/" + aPackage.getApp().getShortCode() + "?id=" + aPackage.getId();
         if (this.isiOS()) {
             if (aPackage.getProvision() == null) {
                 this.type = "内测版";

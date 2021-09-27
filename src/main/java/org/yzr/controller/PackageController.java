@@ -48,7 +48,7 @@ public class PackageController {
         AppViewModel viewModel = this.appService.findByCode(code, id);
         request.setAttribute("app", viewModel);
         request.setAttribute("ca_path", this.pathManager.getCAPath());
-        request.setAttribute("basePath", this.pathManager.getBaseURL(false));
+        request.setAttribute("basePath", this.pathManager.getBaseURL(true));
         return "install";
     }
 
@@ -89,6 +89,9 @@ public class PackageController {
         Map<String, Object> map = new HashMap<>();
         try {
             String filePath = transfer(file);
+            System.out.println("=================================");
+            System.out.println(filePath);
+            System.out.println("=================================");
             Package aPackage = this.packageService.buildPackage(filePath);
             Map<String , String> extra = new HashMap<>();
             String jobName = request.getParameter("jobName");
@@ -108,7 +111,7 @@ public class PackageController {
             aPackage.setApp(app);
             app = this.appService.save(app);
             // URL
-            String codeURL = this.pathManager.getBaseURL(false) + "p/code/" + app.getCurrentPackage().getId();
+            String codeURL = this.pathManager.getBaseURL(true) + "p/code/" + app.getCurrentPackage().getId();
             // 发送WebHook消息
             WebHookClient.sendMessage(app, pathManager);
             map.put("code", codeURL);
