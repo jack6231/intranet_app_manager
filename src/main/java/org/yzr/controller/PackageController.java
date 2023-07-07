@@ -140,19 +140,22 @@ public class PackageController {
                 String fileName = aPackage.getName() + "_" + aPackage.getVersion();
                 String ext =  "." + FilenameUtils.getExtension(aPackage.getFileName());
                 String appName = new String(fileName.getBytes("UTF-8"), "iso-8859-1");
+                String contentType = "application/octet-stream";
+                // 设置响应头部
+                response.reset();
+                response.setContentType(contentType);
                 response.setHeader("Content-Disposition", "attachment;fileName=" + appName + ext);
-
-                byte[] buffer = new byte[1024];
-                OutputStream os = response.getOutputStream();
-                FileInputStream fis = new FileInputStream(file);
-                BufferedInputStream bis = new BufferedInputStream(fis);
-                int i = bis.read(buffer);
-                while(i != -1){
-                    os.write(buffer);
-                    i = bis.read(buffer);
+                response.setHeader("Content-Length", String.valueOf(file.length()));
+                // 读取文件并写入响应
+                byte[] buffer = new byte[4096];
+                try (FileInputStream fis = new FileInputStream(file);
+                     BufferedInputStream bis = new BufferedInputStream(fis);
+                     OutputStream os = response.getOutputStream()) {
+                    int bytesRead;
+                    while ((bytesRead = bis.read(buffer)) != -1) {
+                        os.write(buffer, 0, bytesRead);
+                    }
                 }
-                bis.close();
-                fis.close();
             }
         } catch (Exception e) {
             e.printStackTrace();
