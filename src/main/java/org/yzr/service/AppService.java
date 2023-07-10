@@ -13,6 +13,7 @@ import org.yzr.vo.AppViewModel;
 import org.yzr.vo.PackageViewModel;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import java.io.File;
 import java.util.ArrayList;
@@ -40,23 +41,23 @@ public class AppService {
     }
 
     @Transactional
-    public List<AppViewModel> findAll() {
+    public List<AppViewModel> findAll(HttpServletRequest request) {
         Iterable<App> apps = this.appDao.findAll();
         List<AppViewModel> list = new ArrayList<>();
         for (App app : apps) {
-            AppViewModel appViewModel = new AppViewModel(app, this.pathManager, false);
+            AppViewModel appViewModel = new AppViewModel(app, this.pathManager, false, request);
             list.add(appViewModel);
         }
         return list;
     }
 
     @Transactional
-    public AppViewModel getById(String appID) {
+    public AppViewModel getById(String appID, HttpServletRequest request) {
         Optional<App> optionalApp = this.appDao.findById(appID);
         App app = optionalApp.get();
         if (app != null) {
             app.getPackageList().forEach(aPackage -> {});
-            AppViewModel appViewModel = new AppViewModel(app, this.pathManager, true);
+            AppViewModel appViewModel = new AppViewModel(app, this.pathManager, true, request);
             return appViewModel;
         }
         return null;
@@ -104,9 +105,9 @@ public class AppService {
      * @return
      */
     @Transactional
-    public AppViewModel findByCode(String code, String packageId) {
+    public AppViewModel findByCode(String code, String packageId, HttpServletRequest request) {
         App app = this.appDao.findByShortCode(code);
-        AppViewModel viewModel = new AppViewModel(app, pathManager, packageId);
+        AppViewModel viewModel = new AppViewModel(app, pathManager, packageId, request);
         return viewModel;
     }
 }

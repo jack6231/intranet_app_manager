@@ -12,6 +12,7 @@ import org.yzr.utils.parser.ParserClient;
 import org.yzr.vo.PackageViewModel;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import java.io.File;
 
@@ -62,9 +63,9 @@ public class PackageService {
     }
 
     @Transactional
-    public PackageViewModel findById(String id) {
+    public PackageViewModel findById(String id, HttpServletRequest request) {
         Package aPackage = this.packageDao.findById(id).get();
-        PackageViewModel viewModel = new PackageViewModel(aPackage, this.pathManager);
+        PackageViewModel viewModel = new PackageViewModel(aPackage, this.pathManager, request);
         return viewModel;
     }
 

@@ -44,11 +44,13 @@ public class PackageController {
      */
     @GetMapping("/s/{code}")
     public String get(@PathVariable("code") String code, HttpServletRequest request) {
+        String scheme = request.getScheme();
+        Boolean isHttps = "https".equals(scheme);
         String id = request.getParameter("id");
-        AppViewModel viewModel = this.appService.findByCode(code, id);
+        AppViewModel viewModel = this.appService.findByCode(code, id, request);
         request.setAttribute("app", viewModel);
-        request.setAttribute("ca_path", this.pathManager.getCAPath());
-        request.setAttribute("basePath", this.pathManager.getBaseURL(true));
+        request.setAttribute("ca_path", this.pathManager.getCAPath(isHttps));
+        request.setAttribute("basePath", this.pathManager.getBaseURL(isHttps));
         return "install";
     }
 
@@ -60,7 +62,7 @@ public class PackageController {
      */
     @GetMapping("/devices/{id}")
     public String devices(@PathVariable("id") String id, HttpServletRequest request) {
-        PackageViewModel viewModel= this.packageService.findById(id);
+        PackageViewModel viewModel= this.packageService.findById(id, request);
         request.setAttribute("app", viewModel);
         return "devices";
     }
@@ -87,11 +89,10 @@ public class PackageController {
     @ResponseBody
     public Map<String, Object> upload(@RequestParam("file") MultipartFile file, HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();
+        String scheme = request.getScheme();
+        Boolean isHttps = "https".equals(scheme);
         try {
             String filePath = transfer(file);
-            System.out.println("=================================");
-            System.out.println(filePath);
-            System.out.println("=================================");
             Package aPackage = this.packageService.buildPackage(filePath);
             Map<String , String> extra = new HashMap<>();
             String jobName = request.getParameter("jobName");
@@ -111,7 +112,7 @@ public class PackageController {
             aPackage.setApp(app);
             app = this.appService.save(app);
             // URL
-            String codeURL = this.pathManager.getBaseURL(true) + "p/code/" + app.getCurrentPackage().getId();
+            String codeURL = this.pathManager.getBaseURL(isHttps) + "p/code/" + app.getCurrentPackage().getId();
             // 发送WebHook消息
             WebHookClient.sendMessage(app, pathManager);
             map.put("code", codeURL);
@@ -168,9 +169,9 @@ public class PackageController {
      * @param response
      */
     @RequestMapping("/m/{id}")
-    public void getManifest(@PathVariable("id") String id, HttpServletResponse response) {
+    public void getManifest(@PathVariable("id") String id, HttpServletRequest request, HttpServletResponse response) {
         try {
-            PackageViewModel viewModel = this.packageService.findById(id);
+            PackageViewModel viewModel = this.packageService.findById(id, request);
             if (viewModel != null && viewModel.isiOS()) {
                 response.setContentType("application/force-download");
                 response.setHeader("Content-Disposition", "attachment;fileName=manifest.plist");
@@ -188,9 +189,9 @@ public class PackageController {
      * @param response
      */
     @RequestMapping("/p/code/{id}")
-    public void getQrCode(@PathVariable("id") String id, HttpServletResponse response) {
+    public void getQrCode(@PathVariable("id") String id, HttpServletRequest request, HttpServletResponse response) {
         try {
-            PackageViewModel viewModel = this.packageService.findById(id);
+            PackageViewModel viewModel = this.packageService.findById(id, request);
             if (viewModel != null) {
                 response.setContentType("image/png");
                 QRCodeUtil.encode(viewModel.getPreviewURL()).withSize(250, 250).writeTo(response.getOutputStream());

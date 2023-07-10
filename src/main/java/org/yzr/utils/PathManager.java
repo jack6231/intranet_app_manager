@@ -49,7 +49,7 @@ public class PathManager {
             int port = isHttps ? httpsPort : httpPort;
             String protocol = isHttps ? "https" : "http";
             String portString = ":" + port;
-            if (port == 80 || port == 443 || port == 8081 || port == 0) {
+            if ("apphost.truckerpath.com".equals(domain)) {
                 portString = "";
             }
 
@@ -85,8 +85,8 @@ public class PathManager {
      * 获取证书路径
      * @return
      */
-    public String getCAPath() {
-        return getBaseURL(true) + "crt/ca.crt";
+    public String getCAPath(Boolean isHttps) {
+        return getBaseURL(isHttps) + "crt/ca.crt";
     }
     /**
      * 获取图标的临时路径

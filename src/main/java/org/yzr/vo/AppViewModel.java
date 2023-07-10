@@ -4,6 +4,7 @@ import org.yzr.model.App;
 import org.yzr.model.Package;
 import org.yzr.utils.PathManager;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,7 +41,9 @@ public class AppViewModel {
      * @param pathManager
      * @param loadList
      */
-    public AppViewModel(App app, PathManager pathManager, boolean loadList) {
+    public AppViewModel(App app, PathManager pathManager, boolean loadList, HttpServletRequest request) {
+        String scheme = request.getScheme();
+        Boolean isHttps = "https".equals(scheme);
         this.id = app.getId();
         this.platform = app.getPlatform();
         this.bundleID = app.getBundleID();
@@ -50,16 +53,18 @@ public class AppViewModel {
         this.buildVersion = aPackage.getBuildVersion();
         this.shortCode = app.getShortCode();
         this.name = app.getName();
-        this.installPath = pathManager.getBaseURL(true) + "s/" + app.getShortCode();
+        this.installPath = pathManager.getBaseURL(isHttps) + "s/" + app.getShortCode();
         this.minVersion = aPackage.getMinVersion();
-        this.currentPackage = new PackageViewModel(aPackage, pathManager);
+        this.currentPackage = new PackageViewModel(aPackage, pathManager, request);
         if (loadList) {
             // 排序
-            this.packageList = sortPackages(app.getPackageList(), pathManager);
+            this.packageList = sortPackages(app.getPackageList(), pathManager, request);
         }
     }
 
-    public AppViewModel(App app, PathManager pathManager, String packageId) {
+    public AppViewModel(App app, PathManager pathManager, String packageId, HttpServletRequest request) {
+        String scheme = request.getScheme();
+        Boolean isHttps = "https".equals(scheme);
         this.id = app.getId();
         this.platform = app.getPlatform();
         this.bundleID = app.getBundleID();
@@ -69,9 +74,9 @@ public class AppViewModel {
         this.buildVersion = aPackage.getBuildVersion();
         this.shortCode = app.getShortCode();
         this.name = app.getName();
-        this.installPath = pathManager.getBaseURL(true) + "s/" + app.getShortCode();
+        this.installPath = pathManager.getBaseURL(isHttps) + "s/" + app.getShortCode();
         this.minVersion = aPackage.getMinVersion();
-        this.currentPackage = new PackageViewModel(aPackage, pathManager);
+        this.currentPackage = new PackageViewModel(aPackage, pathManager, request);
     }
 
     private static Package findPackageById(App app, String id) {
@@ -86,11 +91,11 @@ public class AppViewModel {
         return app.getCurrentPackage();
     }
 
-    private static List<PackageViewModel> sortPackages(List<Package> packages, PathManager pathManager) {
+    private static List<PackageViewModel> sortPackages(List<Package> packages, PathManager pathManager, HttpServletRequest request) {
         // 排序
         List<PackageViewModel> packageViewModels = new ArrayList<>();
         for (Package aPackage : packages) {
-            PackageViewModel packageViewModel = new PackageViewModel(aPackage, pathManager);
+            PackageViewModel packageViewModel = new PackageViewModel(aPackage, pathManager, request);
             packageViewModels.add(packageViewModel);
         }
         packageViewModels.sort((o1, o2) -> {

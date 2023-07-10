@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 import org.yzr.model.Package;
 import org.yzr.utils.PathManager;
 
+import javax.servlet.http.HttpServletRequest;
 import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Date;
@@ -33,10 +34,12 @@ public class PackageViewModel {
     private int deviceCount;
     private String message;
 
-    public PackageViewModel(Package aPackage, PathManager pathManager) {
-        this.downloadURL = pathManager.getBaseURL(true) + "p/" + aPackage.getId();
-        this.safeDownloadURL = pathManager.getBaseURL(true) + "p/" + aPackage.getId();
-        this.iconURL = pathManager.getPackageResourceURL(aPackage, true) + "icon.png";
+    public PackageViewModel(Package aPackage, PathManager pathManager, HttpServletRequest request) {
+        String scheme = request.getScheme();
+        Boolean isHttps = "https".equals(scheme);
+        this.downloadURL = pathManager.getBaseURL(isHttps) + "p/" + aPackage.getId();
+        this.safeDownloadURL = pathManager.getBaseURL(isHttps) + "p/" + aPackage.getId();
+        this.iconURL = pathManager.getPackageResourceURL(aPackage, isHttps) + "icon.png";
         this.id = aPackage.getId();
         this.version = aPackage.getVersion();
         this.bundleID = aPackage.getBundleID();
@@ -49,15 +52,15 @@ public class PackageViewModel {
         this.displayTime = displayTime;
         if (aPackage.getPlatform().equals("ios")) {
             this.iOS = true;
-            String url = pathManager.getBaseURL(true) + "m/" + aPackage.getId();
+            String url = pathManager.getBaseURL(isHttps) + "m/" + aPackage.getId();
             try {
                 this.installURL = "itms-services://?action=download-manifest&url=" + URLEncoder.encode(url, "utf-8");
             } catch (Exception e){e.printStackTrace();}
         } else if (aPackage.getPlatform().equals("android")) {
             this.iOS = false;
-            this.installURL = pathManager.getPackageResourceURL(aPackage, false) + aPackage.getFileName();
+            this.installURL = pathManager.getPackageResourceURL(aPackage, isHttps) + aPackage.getFileName();
         }
-        this.previewURL = pathManager.getBaseURL(true) + "s/" + aPackage.getApp().getShortCode() + "?id=" + aPackage.getId();
+        this.previewURL = pathManager.getBaseURL(isHttps) + "s/" + aPackage.getApp().getShortCode() + "?id=" + aPackage.getId();
         if (this.isiOS()) {
             if (aPackage.getProvision() == null) {
                 this.type = "内测版";

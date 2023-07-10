@@ -25,10 +25,12 @@ public class AppController {
 
     @GetMapping("/apps")
     public String apps(HttpServletRequest request) {
+        String scheme = request.getScheme();
+        Boolean isHttps = "https".equals(scheme);
         try{
-            List<AppViewModel> apps = this.appService.findAll();
+            List<AppViewModel> apps = this.appService.findAll(request);
             request.setAttribute("apps", apps);
-            request.setAttribute("baseURL", this.pathManager.getBaseURL(true));
+            request.setAttribute("baseURL", this.pathManager.getBaseURL(isHttps));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -38,7 +40,7 @@ public class AppController {
 
     @GetMapping("/apps/{appID}")
     public String getAppById(@PathVariable("appID") String appID, HttpServletRequest request) {
-        AppViewModel appViewModel = this.appService.getById(appID);
+        AppViewModel appViewModel = this.appService.getById(appID, request);
         request.setAttribute("package", appViewModel);
         request.setAttribute("apps", appViewModel.getPackageList());
         return "list";
@@ -46,8 +48,8 @@ public class AppController {
 
     @RequestMapping("/packageList/{appID}")
     @ResponseBody
-    public Map<String, Object> getAppPackageList(@PathVariable("appID") String appID) {
-        AppViewModel appViewModel = this.appService.getById(appID);
+    public Map<String, Object> getAppPackageList(@PathVariable("appID") String appID, HttpServletRequest request) {
+        AppViewModel appViewModel = this.appService.getById(appID, request);
         Map<String, Object> map = new HashMap<>();
         try {
             map.put("packages", appViewModel.getPackageList());
