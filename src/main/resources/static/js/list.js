@@ -70,6 +70,7 @@ function getPackageList() {
                 var displayTime = package.displayTime;
                 var type = package.type;
                 var downloadURL = package.downloadURL;
+                var publicDownloadURL = package.publicDownloadURL;
                 var displaySize = package.displaySize;
                 var previewURL = package.previewURL;
                 var id = package.id;
@@ -95,6 +96,9 @@ function getPackageList() {
                 packageList += '<button class="tooltip-top download-action" tooltip="下载原文件" value="' + downloadURL + '">';
                 packageList += '<i class="icon-cloud-download"></i>';
                 packageList += '<span class="ng-binding"> ' + displaySize + '</span>';
+                packageList += '</button>';
+                packageList += '<button class="tooltip-top" tooltip="复制外链接到剪切板" onclick="copyToClipboard(\'' + publicDownloadURL + '\')">';
+                packageList += '<span class="ng-binding"> 复制</span>';
                 packageList += '</button>';
                 packageList += '<button class="preview" value="' + previewURL + '">';
                 packageList += '<i class="icon-eye"></i>';
@@ -293,3 +297,24 @@ $(function () {
         $("#webhook-form-view").removeClass("ng-hide");
     });
 });
+
+function copyToClipboard(text) {
+  // 创建一个临时的 textarea 元素
+  var textarea = document.createElement("textarea");
+  // 将文本赋值给 textarea 的 value 属性
+  textarea.value = text;
+  // 将 textarea 添加到文档中
+  document.body.appendChild(textarea);
+  // 选中 textarea 中的文本
+  textarea.select();
+  // 将文本复制到剪切板
+  document.execCommand("copy");
+  // 从文档中移除 textarea 元素
+  document.body.removeChild(textarea);
+  toastr.options = {
+        "positionClass": "toast-bottom-center my-toast-bottom",
+    }
+  toastr.success("已将文本复制到剪切板！", "", {
+      timeOut: 2000
+    });
+}

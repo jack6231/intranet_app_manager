@@ -16,6 +16,7 @@ import java.util.Map;
 
 public class PackageViewModel {
     private String downloadURL;
+    private String publicDownloadURL;
     private String safeDownloadURL;
     private String iconURL;
     private String installURL;
@@ -38,6 +39,7 @@ public class PackageViewModel {
         String scheme = request.getScheme();
         Boolean isHttps = "https".equals(scheme);
         this.downloadURL = pathManager.getBaseURL(isHttps) + "p/" + aPackage.getId();
+        this.publicDownloadURL = "http://34.221.237.191:8082/p/" + aPackage.getId();
         this.safeDownloadURL = pathManager.getBaseURL(isHttps) + "p/" + aPackage.getId();
         this.iconURL = pathManager.getPackageResourceURL(aPackage, isHttps) + "icon.png";
         this.id = aPackage.getId();
@@ -103,6 +105,8 @@ public class PackageViewModel {
     public String getSafeDownloadURL() {
         return safeDownloadURL;
     }
+
+    public String getPublicDownloadURL() { return publicDownloadURL; }
 
     public String getIconURL() {
         return iconURL;

@@ -6,7 +6,7 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 group = 'org.yzr'
-version = '1.0.4'
+version = '1.0.5'
 sourceCompatibility = '1.8'
 
 configurations {
