@@ -40,9 +40,10 @@ public class PathManager {
         try {
             // URL
             InetAddress address = InetAddress.getLocalHost();
+            String host = address.getHostAddress();
             String domain=environment.getProperty("server.domain");
-            if (domain == null) {
-                domain = address.getHostAddress();
+            if (domain == null || "34.221.237.191".equals(host)) {
+                domain = host;
             }
             int httpPort = Integer.parseInt(environment.getProperty("server.http.port"));
             int httpsPort = Integer.parseInt(environment.getProperty("server.port"));

@@ -314,7 +314,7 @@ function copyToClipboard(text) {
   toastr.options = {
         "positionClass": "toast-bottom-center my-toast-bottom",
     }
-  toastr.success("已将文本复制到剪切板！", "", {
+  toastr.success("已将外网链接复制到剪切板！", "", {
       timeOut: 2000
     });
 }
