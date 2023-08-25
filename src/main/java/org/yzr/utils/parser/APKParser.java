@@ -6,7 +6,7 @@ import net.dongliu.apk.parser.bean.IconFace;
 import org.apache.commons.io.FileUtils;
 import org.yzr.model.Package;
 import org.yzr.utils.PathManager;
-
+import net.dongliu.apk.parser.bean.*;
 import java.io.File;
 import java.util.UUID;
 
@@ -37,11 +37,14 @@ public class APKParser implements PackageParser {
             aPackage.setPlatform("android");
             aPackage.setCreateTime(currentTimeMillis);
             int iconCount = apkFile.getAllIcons().size();
-            if (iconCount > 0) {
-                IconFace icon = apkFile.getAllIcons().get(iconCount - 1);
-                String iconPath = PathManager.getTempIconPath(aPackage);
-                File iconFile = new File(iconPath);
-                FileUtils.writeByteArrayToFile(iconFile, icon.getData());
+            for (int i = iconCount-1; i >= 0; i--)  {
+                IconFace icon = apkFile.getAllIcons().get(i);
+                if (icon instanceof Icon) {
+                    String iconPath = PathManager.getTempIconPath(aPackage);
+                    File iconFile = new File(iconPath);
+                    FileUtils.writeByteArrayToFile(iconFile, icon.getData());
+                    break;
+                }
             }
             apkFile.close();
             return aPackage;
