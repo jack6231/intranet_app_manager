@@ -13,7 +13,10 @@ public class ParserClient {
     public static Package parse(String filePath) {
         PackageParser parser = getParser(filePath);
         if (parser != null) {
-            return parser.parse(filePath);
+            Package p = parser.parse(filePath);
+            if ( p != null ) {
+                return p;
+            }
         }
         return null;
     }
