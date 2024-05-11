@@ -34,6 +34,7 @@ public class PackageViewModel {
     private List<String> devices;
     private int deviceCount;
     private String message;
+    private boolean isRelease;
 
     public PackageViewModel(Package aPackage, PathManager pathManager, HttpServletRequest request) {
         String scheme = request.getScheme();
@@ -48,6 +49,7 @@ public class PackageViewModel {
         this.name = aPackage.getName();
         this.createTime = aPackage.getCreateTime();
         this.buildVersion = aPackage.getBuildVersion();
+        this.isRelease = aPackage.getIsRelease();
         this.displaySize = String.format("%.2f MB", aPackage.getSize() / (1.0F * FileUtils.ONE_MB));
         Date updateTime = new Date(this.createTime);
         String displayTime = (new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(updateTime);
@@ -171,4 +173,6 @@ public class PackageViewModel {
     public String getMessage() {
         return message;
     }
+
+    public boolean getIsRelease() { return  isRelease; }
 }

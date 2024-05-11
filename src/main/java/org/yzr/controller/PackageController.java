@@ -219,6 +219,19 @@ public class PackageController {
         return map;
     }
 
+    @RequestMapping("/p/update/{id}/{isRelease}")
+    @ResponseBody
+    public Map<String, Object> deleteById(@PathVariable("id") String id, @PathVariable("isRelease") Boolean isRelease) {
+        Map<String, Object> map = new HashMap<>();
+        try {
+            this.packageService.updateById(id, isRelease);
+            map.put("success", true);
+        } catch (Exception e) {
+            map.put("success", false);
+        }
+        return map;
+    }
+
     /**
      * 转存文件
      * @param srcFile

@@ -75,6 +75,10 @@ function getPackageList() {
                 var previewURL = package.previewURL;
                 var id = package.id;
                 var message = package.message;
+                var isRelease = package.isRelease;
+                var releaseLabel = isRelease ? "已发布" : "定版"
+                var deleteButtonClass = (i > 0 && !isRelease) ? "show-button" : "hide-button"; // 控制删除按钮的显示与隐藏
+
                 packageList += '<li class="package_index_' + id + '">';
                 packageList += '<div>';
                 packageList += '<div class="directive-view-release">';
@@ -97,19 +101,19 @@ function getPackageList() {
                 packageList += '<i class="icon-cloud-download"></i>';
                 packageList += '<span class="ng-binding"> ' + displaySize + '</span>';
                 packageList += '</button>';
-                packageList += '<button class="tooltip-top" tooltip="复制外链接到剪切板" onclick="copyToClipboard(\'' + publicDownloadURL + '\')">';
-                packageList += '<span class="ng-binding"> 复制</span>';
+                packageList += '<button class="ng-scope app-release" data="' + id + '" isRelease="' + isRelease + '" index="' + i + '">';
+                packageList += '<span class="ng-binding">' + releaseLabel + '</span>';
                 packageList += '</button>';
                 packageList += '<button class="preview" value="' + previewURL + '">';
                 packageList += '<i class="icon-eye"></i>';
                 packageList += '<span class="ng-binding"> 预览</span>';
                 packageList += '</button>';
-                if (i > 0) {
-                    packageList += '<button class="ng-scope app-delete" data="' + id + '">';
-                    packageList += '<i class="icon-trash"></i>';
-                    packageList += '<span class="ng-binding"> 删除</span>';
-                    packageList += '</button>';
-                }
+                // 动态添加删除按钮的显示和隐藏类
+                packageList += '<button class="ng-scope app-delete ' + deleteButtonClass + '" data="' + id + '">';
+                packageList += '<i class="icon-trash"></i>';
+                packageList += '<span class="ng-binding"> 删除 </span>';
+                packageList += '</button>';
+
                 packageList += '</div>';
                 packageList += '</div >';
                 packageList += '</div >';
@@ -236,6 +240,38 @@ function bindActions() {
             }
         });
     });
+
+    $(".app-release").click( function () {
+        var id = $(this).attr("data");
+        var isRelease = $(this).attr("isRelease") === "false";
+        console.log("index attribute:", $(this).attr("index"));
+        var index = parseInt($(this).attr("index"), 10);
+        console.log("Parsed index:", index);  // 查看转换后的值
+        console.log("isRelease:" + isRelease);
+        var url = "/p/update/" + id + "/" + isRelease;
+        var li = "package_index_" + id;
+        console.log(li);
+        var self = $("." + li);
+        $.post(url, function (result) {
+        console.log("请求结束");
+        if (result.success) {
+                // 页面更新这条 package
+            var button = self.find(".app-release");
+            var deleteButton = self.find(".app-delete");
+            if (isRelease) {
+                button.html('<span class="ng-binding"> 已发布 </span>');
+                button.attr("isRelease", "true");
+                deleteButton.removeClass('show-button').addClass('hide-button');
+            } else {
+                button.html('<span class="ng-binding"> 定版 </span>');
+                button.attr("isRelease", "false");
+                if ( index > 0) {
+                    deleteButton.removeClass('hide-button').addClass('show-button');
+                }
+            }
+         }
+        });
+    });
 }
 
 $(function () {
@@ -297,24 +333,3 @@ $(function () {
         $("#webhook-form-view").removeClass("ng-hide");
     });
 });
-
-function copyToClipboard(text) {
-  // 创建一个临时的 textarea 元素
-  var textarea = document.createElement("textarea");
-  // 将文本赋值给 textarea 的 value 属性
-  textarea.value = text;
-  // 将 textarea 添加到文档中
-  document.body.appendChild(textarea);
-  // 选中 textarea 中的文本
-  textarea.select();
-  // 将文本复制到剪切板
-  document.execCommand("copy");
-  // 从文档中移除 textarea 元素
-  document.body.removeChild(textarea);
-  toastr.options = {
-        "positionClass": "toast-bottom-center my-toast-bottom",
-    }
-  toastr.success("已将外网链接复制到剪切板！", "", {
-      timeOut: 2000
-    });
-}

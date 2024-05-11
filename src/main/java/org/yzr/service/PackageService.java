@@ -79,4 +79,14 @@ public class PackageService {
         }
 
     }
+
+    @Transactional
+    public void updateById(String id, boolean isRelease) {
+        Package aPackage = this.packageDao.findById(id).get();
+        if (aPackage != null) {
+            aPackage.setIsRelease(isRelease);
+            this.packageDao.save(aPackage);
+        }
+
+    }
 }

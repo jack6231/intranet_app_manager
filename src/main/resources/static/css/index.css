@@ -1165,3 +1165,11 @@ body {
 .my-toast-bottom {
   bottom: 100px !important;
 }
+
+.hide-button {
+    display: none!important;  /* 隐藏按钮 */
+}
+
+.show-button {
+    display: inline-block;  /* 默认显示按钮 */
+}

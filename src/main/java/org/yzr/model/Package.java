@@ -34,6 +34,9 @@ public class Package {
     private String extra;
     // 文件名
     private String fileName;
+    // 是否是 定版包
+    private boolean isRelease;
+
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumn(name="appId")
     private App app;
@@ -144,5 +147,13 @@ public class Package {
 
     public void setProvision(Provision provision) {
         this.provision = provision;
+    }
+
+    public boolean getIsRelease() {
+        return isRelease;
+    }
+
+    public void setIsRelease(boolean isRelease) {
+        this.isRelease = isRelease;
     }
 }
