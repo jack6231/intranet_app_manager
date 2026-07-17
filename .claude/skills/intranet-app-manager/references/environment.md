@@ -14,7 +14,27 @@
 - 出包命令:`./gradlew clean bootJar` → 产物 `build/libs/intranet_app_manager-<version>.jar`。版本号在 `build.gradle` 的 `version`(当前 1.0.7)。
 - **jar 瘦身**:`build.gradle` 的 `processResources { exclude 'static/upload/**' }` 已排除开发期上传包。正常 jar ≈ **44MB**;若见到几百 MB,说明排除失效(历史上曾达 744MB,含 676MB 的 `static/upload` 死重)。
 
-## 部署目标机 Node2(235)
+## 两套环境:测服 236 / 正服 235
+
+发布纪律:**先测服 236 验证 → 再正服 235**。`deploy.sh`/`service.sh` 用 `test|prod` 参数区分,默认 `test`,正服必须显式 `prod`,防误发。
+
+| | 测服(test) | 正服(prod) |
+|--|-----------|-----------|
+| 主机 | `iospub@10.2.54.236`(Node3 自动化测试机) | `iospub@10.2.54.235`(Node2) |
+| 域名 | `server.domain=10.2.54.236` | `server.domain=10.2.54.235` |
+| 对外 | http://10.2.54.236:8082/apps | http://10.2.54.235:8082/apps |
+| MySQL | 9.7.x(brew,root 空密码) | 9.6.x |
+| 运行方式 | **nohup**(暂无 launchd 持久化,缺 sudo);重启=kill 后 nohup 重起 | **launchd** `com.truckerpath.appmanager`(KeepAlive);重启=kill 靠自动拉起 |
+| 数据 | 造的 mock 数据(见 `scripts/testdata/mock.sh`) | 真实数据,勿动 |
+
+> 关键差异:**测服重启必须 nohup 重起**(kill 后不会自动回来);正服 kill 后 launchd 会拉起。`deploy.sh`/`service.sh` 已按环境自动处理。
+> 待办:236 若配上 launchd(需 sudo 一次装 plist),即可与正服行为完全一致,届时把测服 RESTART_MODE 改为 launchd。
+
+### 造测试数据(测服)
+
+`scripts/testdata/mock.sh` 在 236 上生成 3 个 App(iOS Dev/Android/Legacy),含不同新旧+定版+当前包组合。用法见脚本头部(scp 图标+脚本到 236 后 ssh 执行)。**切勿在正服跑。**
+
+## 部署目标机 Node2(235,正服)
 
 - **SSH**:`ssh iospub@10.2.54.235`(已配公钥,免密)。同 jenkins skill 的 Node2。
 - **目录**:`/Users/iospub/intranet_app_manager/`(**不是 git 仓库,是 jar 投放目录**)
