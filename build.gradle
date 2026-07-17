@@ -6,7 +6,7 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 group = 'org.yzr'
-version = '1.0.7'
+version = '1.0.8'
 sourceCompatibility = '1.8'
 
 configurations {
@@ -21,6 +21,12 @@ configurations {
 
 repositories {
     mavenCentral()
+}
+
+// 开发(debug)模式下上传的包会落到 src/main/resources/static/upload,
+// 打包时排除,避免历史上传包被塞进 jar 导致体积虚胖(线上 release 模式读外置 static/)。
+processResources {
+    exclude 'static/upload/**'
 }
 
 dependencies {
