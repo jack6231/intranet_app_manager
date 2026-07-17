@@ -24,15 +24,23 @@
 | 域名 | `server.domain=10.2.54.236` | `server.domain=10.2.54.235` |
 | 对外 | http://10.2.54.236:8082/apps | http://10.2.54.235:8082/apps |
 | MySQL | 9.7.x(brew,root 空密码) | 9.6.x |
-| 运行方式 | **nohup**(暂无 launchd 持久化,缺 sudo);重启=kill 后 nohup 重起 | **launchd** `com.truckerpath.appmanager`(KeepAlive);重启=kill 靠自动拉起 |
+| 运行方式 | **nohup**(临时环境,不做 launchd 持久化);重启=kill 后 nohup 重起 | **launchd** `com.truckerpath.appmanager`(KeepAlive);重启=kill 靠自动拉起 |
+| 生命周期 | **用时现搭、用完清理干净**(不常驻、不留部署目录) | 常驻服务 |
 | 数据 | 造的 mock 数据(见 `scripts/testdata/mock.sh`) | 真实数据,勿动 |
 
 > 关键差异:**测服重启必须 nohup 重起**(kill 后不会自动回来);正服 kill 后 launchd 会拉起。`deploy.sh`/`service.sh` 已按环境自动处理。
-> 待办:236 若配上 launchd(需 sudo 一次装 plist),即可与正服行为完全一致,届时把测服 RESTART_MODE 改为 launchd。
+> 测服策略(共享测试机):**每次用时从零搭建,用完彻底清掉**,不做 launchd 持久化、不留 scaffolding。搭建/清理各一条脚本(下节),幂等可重复。
 
-### 造测试数据(测服)
+### 测服使用周期(setup → mock → test → teardown)
 
-`scripts/testdata/mock.sh` 在 236 上生成 3 个 App(iOS Dev/Android/Legacy),含不同新旧+定版+当前包组合。用法见脚本头部(scp 图标+脚本到 236 后 ssh 执行)。**切勿在正服跑。**
+1. **从零搭建 + 部署**:`bash scripts/testenv-setup.sh`
+   —— 自动:构建 jar → 确保 MySQL(装/起/建库)→ 建目录 + 写 config(domain=236)+ 传证书 + 启动脚本 → 传 jar → nohup 启动 → 健康检查。
+2. **造测试数据**:`scripts/testdata/mock.sh`(先 scp 到 236 再 ssh 执行,脚本头部有用法),生成 3 个 App 覆盖各清理分支。**切勿在正服跑。**
+3. **测试**:http://10.2.54.236:8082/apps
+4. **彻底清理**:`bash scripts/testenv-teardown.sh`
+   —— 停 app → DROP 库 → 删部署目录 → 停 MySQL(保留 brew 安装,下次免重装)→ 清临时脚本。校验进程/端口/目录全空。
+
+> 同一轮内若只是换新 jar 重发,可用 `deploy.sh test --build`(前提是本轮已 setup、目录还在)。
 
 ## 部署目标机 Node2(235,正服)
 
