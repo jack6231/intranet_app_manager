@@ -5,6 +5,9 @@ build/
 !**/src/main/**
 !**/src/test/**
 
+### app uploads (dev-mode 产物,禁止提交/打包)
+src/main/resources/static/upload/
+
 ### STS ###
 .apt_generated
 .classpath
