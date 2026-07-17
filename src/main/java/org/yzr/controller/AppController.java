@@ -73,4 +73,24 @@ public class AppController {
         return map;
     }
 
+    /**
+     * 清理指定 App 的过期非定版包(3-30 天)
+     * @param appID App ID
+     * @param days 清理多少天以前的包
+     */
+    @RequestMapping("/app/clean/{appID}/{days}")
+    @ResponseBody
+    public Map<String, Object> clean(@PathVariable("appID") String appID, @PathVariable("days") int days) {
+        Map<String, Object> map = new HashMap<>();
+        try {
+            int count = this.appService.cleanExpiredPackages(appID, days);
+            map.put("count", count);
+            map.put("success", true);
+        } catch (Exception e) {
+            map.put("success", false);
+            e.printStackTrace();
+        }
+        return map;
+    }
+
 }

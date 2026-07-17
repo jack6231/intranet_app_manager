@@ -5,6 +5,7 @@ import org.apache.commons.io.FileUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.yzr.dao.AppDao;
+import org.yzr.dao.PackageDao;
 import org.yzr.model.App;
 import org.yzr.model.Package;
 import org.yzr.utils.CodeGenerator;
@@ -26,6 +27,10 @@ public class AppService {
     private AppDao appDao;
     @Resource
     private PathManager pathManager;
+    @Resource
+    private PackageService packageService;
+    @Resource
+    private PackageDao packageDao;
 
     @Transactional
     public App save(App app) {
@@ -109,5 +114,37 @@ public class AppService {
         App app = this.appDao.findByShortCode(code);
         AppViewModel viewModel = new AppViewModel(app, pathManager, packageId, request);
         return viewModel;
+    }
+
+    /**
+     * 清理指定 App 的过期非定版包(删数据库记录 + 删安装包文件)。
+     * 保留:定版包、N 天内的包、当前展示包(currentPackage)。
+     * @param appId App ID
+     * @param days  清理多少天以前的包,夹紧到 3-30
+     * @return 实际清理的包数量
+     */
+    /**
+     * 注意:本方法不加 @Transactional。App.packageList 是 cascade=ALL,
+     * 若在一个持有托管 App 的事务里删子包,提交时会被级联重新保存。
+     * 因此这里先用只读查询取候选 id,再逐个交给 packageService.deleteById
+     * (各自独立事务、不持有托管 App),与单个删除 /p/delete 的行为一致。
+     */
+    public int cleanExpiredPackages(String appId, int days) {
+        if (days < 3) days = 3;
+        if (days > 30) days = 30;
+        String currentId = this.appDao.findCurrentPackageId(appId);
+        long threshold = System.currentTimeMillis() - (long) days * 24 * 60 * 60 * 1000;
+        List<String> targets = new ArrayList<>();
+        for (Package aPackage : this.packageDao.findByAppId(appId)) {
+            if (!aPackage.getIsRelease()
+                    && aPackage.getCreateTime() < threshold
+                    && !aPackage.getId().equals(currentId)) {
+                targets.add(aPackage.getId());
+            }
+        }
+        for (String id : targets) {
+            this.packageService.deleteById(id);
+        }
+        return targets.size();
     }
 }

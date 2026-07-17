@@ -16,4 +16,7 @@ public interface AppDao extends CrudRepository<App, String> {
     @Override
     @Query("select a from App a order by a.currentPackage.createTime desc ")
     Iterable<App> findAll();
+
+    @Query("select a.currentPackage.id from App a where a.id = :appId")
+    public String findCurrentPackageId(@Param("appId") String appId);
 }

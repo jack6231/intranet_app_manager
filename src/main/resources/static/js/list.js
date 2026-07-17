@@ -315,6 +315,61 @@ $(function () {
         });
     });
 
+    $("#clean-btn").click(function () {
+        var days = parseInt($("#clean-days").val(), 10);
+        if (isNaN(days) || days < 3 || days > 30) {
+            toastr.warning("请选择 3–30 之间的天数");
+            return;
+        }
+        if (!confirm("确定清理 " + days + " 天前的非定版包?此操作不可恢复")) {
+            return;
+        }
+        var appId = $("#appId").val();
+        $.post("/app/clean/" + appId + "/" + days, function (result) {
+            if (result.success) {
+                toastr.success("已清理 " + result.count + " 个包");
+                getPackageList();
+            } else {
+                toastr.error("清理失败");
+            }
+        });
+    });
+
+    // 清理天数抽屉式下拉(3–30 天)
+    (function () {
+        var $trigger = $("#clean-days-trigger");
+        var $menu = $("#clean-days-menu");
+        if ($trigger.length === 0) {
+            return;
+        }
+        var selected = parseInt($("#clean-days").val(), 10) || 7;
+        var html = "";
+        for (var d = 3; d <= 30; d++) {
+            html += '<li data-days="' + d + '"' + (d === selected ? ' class="active"' : '') + '>' + d + ' 天前</li>';
+        }
+        $menu.html(html);
+
+        $trigger.click(function (e) {
+            e.stopPropagation();
+            $menu.toggleClass("open");
+            $trigger.toggleClass("open");
+        });
+        $menu.on("click", "li", function (e) {
+            e.stopPropagation();
+            var d = $(this).attr("data-days");
+            $("#clean-days").val(d);
+            $("#clean-days-label").text(d + " 天前");
+            $menu.find("li").removeClass("active");
+            $(this).addClass("active");
+            $menu.removeClass("open");
+            $trigger.removeClass("open");
+        });
+        $(document).click(function () {
+            $menu.removeClass("open");
+            $trigger.removeClass("open");
+        });
+    })();
+
     $("#ding-ding-web-hook-name, #ding-ding-web-hook-url").bind("input propertychange", function (event) {
         var name = $("#ding-ding-web-hook-name").val();
         var url = $("#ding-ding-web-hook-url").val();

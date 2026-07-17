@@ -1173,3 +1173,103 @@ body {
 .show-button {
     display: inline-block;  /* 默认显示按钮 */
 }
+
+/* 过期包清理控件 —— 与 基本信息/集成 标签同行对齐 */
+.tabs-container {
+    display: flex;
+    align-items: center;
+}
+.tabs-container .list-inline {
+    margin-bottom: 0;
+}
+.clean-box {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 28px;
+    padding-left: 28px;
+    border-left: 1px solid #eee;
+}
+.clean-dropdown {
+    position: relative;
+    margin-right: 10px;
+}
+.clean-days-trigger {
+    display: inline-flex;
+    align-items: center;
+    min-width: 96px;
+    height: 34px;
+    padding: 0 12px;
+    background: #fff;
+    border: 1px solid #dcdfe6;
+    border-radius: 6px;
+    color: #333;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: border-color .15s;
+}
+.clean-days-trigger:hover {
+    border-color: #f0806a;
+}
+.clean-days-trigger .caret-down {
+    margin-left: auto;
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #b0b0b0;
+    transition: transform .15s;
+}
+.clean-days-trigger.open .caret-down {
+    transform: rotate(180deg);
+}
+.clean-days-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 100%;
+    max-height: 220px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 6px 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+    z-index: 1000;
+    display: none;
+}
+.clean-days-menu.open {
+    display: block;
+}
+.clean-days-menu li {
+    padding: 7px 16px;
+    font-size: 13px;
+    color: #555;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .1s;
+}
+.clean-days-menu li:hover {
+    background: #fef0ec;
+    color: #e8543a;
+}
+.clean-days-menu li.active {
+    color: #e8543a;
+    font-weight: 600;
+}
+.clean-btn {
+    height: 34px;
+    padding: 0 20px;
+    color: #fff;
+    background: #f0806a;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s;
+}
+.clean-btn:hover {
+    background: #e8543a;
+}
