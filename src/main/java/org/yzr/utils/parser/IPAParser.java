@@ -45,6 +45,8 @@ public class IPAParser implements PackageParser {
             aPackage.setMinVersion(infoPlist.stringValueForPath("MinimumOSVersion"));
             aPackage.setCreateTime(currentTimeMillis);
             aPackage.setPlatform("ios");
+            // 构建该包的 git commit：Xcode build phase 已经在写这个字段（实测值形如 192505ceaa）
+            aPackage.setGitCommit(CommitExtractor.normalize(infoPlist.stringValueForPath(CommitExtractor.KEY)));
 
             // 获取应用图标
             String iconName = infoPlist.stringValueForKeyPath("CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName");

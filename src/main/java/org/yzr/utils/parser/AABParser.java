@@ -75,6 +75,8 @@ public class AABParser implements PackageParser {
             aPackage.setMinVersion(meta.getMinSdkVersion());
             aPackage.setPlatform("android");
             aPackage.setCreateTime(currentTimeMillis);
+            // commit 与 APK 同源：aab 经 bundletool 转出的 universal.apk 里带着同一份 manifest
+            aPackage.setGitCommit(CommitExtractor.fromApkManifest(apkFile.getManifestXml()));
             int iconCount = apkFile.getAllIcons().size();
             for (int i = iconCount-1; i >= 0; i--)  {
                 IconFace icon = apkFile.getAllIcons().get(i);

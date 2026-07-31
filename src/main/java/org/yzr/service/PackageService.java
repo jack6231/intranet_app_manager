@@ -15,6 +15,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class PackageService {
@@ -67,6 +69,26 @@ public class PackageService {
         Package aPackage = this.packageDao.findById(id).get();
         PackageViewModel viewModel = new PackageViewModel(aPackage, this.pathManager, request);
         return viewModel;
+    }
+
+    /**
+     * 按 git commit 找包，最新的在前。
+     *
+     * 给 CI 用：拿到目标 commit 后先问这里有没有现成的包，命中就直接下载安装，省掉一次编译。
+     * bundleID 传空则跨应用查。commit 的长度差异由 dao 层做双向前缀匹配处理。
+     */
+    @Transactional
+    public List<PackageViewModel> findByCommit(String bundleID, String commit, HttpServletRequest request) {
+        List<Package> packages = (bundleID == null || bundleID.trim().isEmpty())
+                ? this.packageDao.findByCommit(commit)
+                : this.packageDao.findByBundleIDAndCommit(bundleID.trim(), commit);
+        List<PackageViewModel> result = new ArrayList<>();
+        if (packages != null) {
+            for (Package aPackage : packages) {
+                result.add(new PackageViewModel(aPackage, this.pathManager, request));
+            }
+        }
+        return result;
     }
 
     @Transactional

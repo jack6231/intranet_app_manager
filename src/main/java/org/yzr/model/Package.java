@@ -32,6 +32,10 @@ public class Package {
     private String platform;
     // 扩展消息 (json格式)
     private String extra;
+    // 构建该包的 git commit（iOS 取 Info.plist 的 GIT_COMMIT_HASH，Android 取 manifest 的 GIT_COMMIT_HASH meta-data）
+    // 可能是短 hash 也可能是全 SHA，查询时做双向前缀匹配。历史包为 null。
+    @Column(length = 64)
+    private String gitCommit;
     // 文件名
     private String fileName;
     // 是否是 定版包
@@ -123,6 +127,14 @@ public class Package {
 
     public void setExtra(String extra) {
         this.extra = extra;
+    }
+
+    public String getGitCommit() {
+        return gitCommit;
+    }
+
+    public void setGitCommit(String gitCommit) {
+        this.gitCommit = gitCommit;
     }
 
     public String getFileName() {
