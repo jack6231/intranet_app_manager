@@ -14,6 +14,7 @@ import org.yzr.service.AppService;
 import org.yzr.service.PackageService;
 import org.yzr.utils.PathManager;
 import org.yzr.utils.QRCodeUtil;
+import org.yzr.utils.parser.CommitExtractor;
 import org.yzr.utils.ipa.PlistGenerator;
 import org.yzr.utils.webhook.WebHookClient;
 import org.yzr.vo.AppViewModel;
@@ -143,6 +144,18 @@ public class PackageController {
             }
             if (!extra.isEmpty()) {
                 aPackage.setExtra(JSON.toJSONString(extra));
+            }
+            // commit 来源：**包内解析优先，参数兜底**。
+            //   iOS 的 ipa 里有 GIT_COMMIT_HASH，解析即得，不需要也不该传参数
+            //     —— 从包里读的值不可能和包对不上，传参数则有传错的可能。
+            //   Android 的 apk/aab 目前**没有**这个字段（工程还没加 manifestPlaceholders
+            //     注入 <meta-data android:name="GIT_COMMIT_HASH">），只能由调用方传。
+            // 一旦 Android 工程补上 manifest 注入，这里会自动走解析路径，参数自然失效。
+            if (aPackage.getGitCommit() == null) {
+                String commitParam = request.getParameter("gitCommit");
+                if (StringUtils.hasLength(commitParam)) {
+                    aPackage.setGitCommit(CommitExtractor.normalize(commitParam));
+                }
             }
             App app = this.appService.getByPackage(aPackage);
             app.getPackageList().add(aPackage);
