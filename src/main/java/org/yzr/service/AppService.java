@@ -135,11 +135,20 @@ public class AppService {
         String currentId = this.appDao.findCurrentPackageId(appId);
         long threshold = System.currentTimeMillis() - (long) days * 24 * 60 * 60 * 1000;
         List<String> targets = new ArrayList<>();
+        // 逐个打印被删的包 —— 删除会连磁盘文件一起清掉，不可逆；
+        // 没有明细日志的话，事后无法回答「到底删了什么」。手动点「清除」时同样受益。
+        java.text.SimpleDateFormat fmt = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         for (Package aPackage : this.packageDao.findByAppId(appId)) {
             if (!aPackage.getIsRelease()
                     && aPackage.getCreateTime() < threshold
                     && !aPackage.getId().equals(currentId)) {
                 targets.add(aPackage.getId());
+                System.out.println("[cleanup]     - " + aPackage.getBundleID()
+                        + " v" + aPackage.getVersion() + "(" + aPackage.getBuildVersion() + ")"
+                        + " commit=" + (aPackage.getGitCommit() == null ? "-" : aPackage.getGitCommit())
+                        + " " + fmt.format(new java.util.Date(aPackage.getCreateTime()))
+                        + " " + (aPackage.getSize() / 1048576) + "MB"
+                        + " extra=" + (aPackage.getExtra() == null ? "-" : aPackage.getExtra()));
             }
         }
         for (String id : targets) {
