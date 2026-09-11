@@ -32,6 +32,14 @@ public class Package {
     private String platform;
     // 扩展消息 (json格式)
     private String extra;
+    // 构建该包的 git commit（iOS 取 Info.plist 的 GIT_COMMIT_HASH，Android 取 manifest 的 GIT_COMMIT_HASH meta-data）
+    // 可能是短 hash 也可能是全 SHA，查询时做双向前缀匹配。历史包为 null。
+    @Column(length = 64)
+    private String gitCommit;
+    // iOS Info.plist 的 TPE2EBuild：TP_E2E 构建（Debug 配置）为 "1"，Release 包与历史包为 null。
+    // E2E 运行器按 gitCommit + tpE2EBuild 两个字段找可复用的包：只有 E2E 构建的包才带沙盒覆盖文件加载器。
+    @Column(length = 16)
+    private String tpE2EBuild;
     // 文件名
     private String fileName;
     // 是否是 定版包
@@ -123,6 +131,22 @@ public class Package {
 
     public void setExtra(String extra) {
         this.extra = extra;
+    }
+
+    public String getGitCommit() {
+        return gitCommit;
+    }
+
+    public void setGitCommit(String gitCommit) {
+        this.gitCommit = gitCommit;
+    }
+
+    public String getTpE2EBuild() {
+        return tpE2EBuild;
+    }
+
+    public void setTpE2EBuild(String tpE2EBuild) {
+        this.tpE2EBuild = tpE2EBuild;
     }
 
     public String getFileName() {

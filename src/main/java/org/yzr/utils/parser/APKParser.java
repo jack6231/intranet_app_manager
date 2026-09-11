@@ -36,6 +36,8 @@ public class APKParser implements PackageParser {
             aPackage.setMinVersion(meta.getMinSdkVersion());
             aPackage.setPlatform("android");
             aPackage.setCreateTime(currentTimeMillis);
+            // 构建该包的 git commit：打包时用 manifestPlaceholders 注入 meta-data；老包取不到即 null
+            aPackage.setGitCommit(CommitExtractor.fromApkManifest(apkFile.getManifestXml()));
             int iconCount = apkFile.getAllIcons().size();
             for (int i = iconCount-1; i >= 0; i--)  {
                 IconFace icon = apkFile.getAllIcons().get(i);

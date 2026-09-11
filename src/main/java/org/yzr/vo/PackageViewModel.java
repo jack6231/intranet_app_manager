@@ -35,6 +35,9 @@ public class PackageViewModel {
     private int deviceCount;
     private String message;
     private boolean isRelease;
+    // 构建该包的 git commit（历史包为 null）
+    private String gitCommit;
+    private String tpE2EBuild;
 
     public PackageViewModel(Package aPackage, PathManager pathManager, HttpServletRequest request) {
         String scheme = request.getScheme();
@@ -50,6 +53,8 @@ public class PackageViewModel {
         this.createTime = aPackage.getCreateTime();
         this.buildVersion = aPackage.getBuildVersion();
         this.isRelease = aPackage.getIsRelease();
+        this.gitCommit = aPackage.getGitCommit();
+        this.tpE2EBuild = aPackage.getTpE2EBuild();
         this.displaySize = String.format("%.2f MB", aPackage.getSize() / (1.0F * FileUtils.ONE_MB));
         Date updateTime = new Date(this.createTime);
         String displayTime = (new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(updateTime);
@@ -175,4 +180,12 @@ public class PackageViewModel {
     }
 
     public boolean getIsRelease() { return  isRelease; }
+
+    public String getGitCommit() {
+        return gitCommit;
+    }
+
+    public String getTpE2EBuild() {
+        return tpE2EBuild;
+    }
 }

@@ -22,19 +22,23 @@ description: "Build, release, and operate the intranet_app_manager app-distribut
 
 | 用户意图 | 操作 |
 |---------|------|
-| 发布 / 部署 / 更新新版本 | `scripts/deploy.sh`(见下)|
+| 搭建/清理测服(236)| `scripts/testenv-setup.sh` / `scripts/testenv-teardown.sh`(用时现搭、用完清干净)|
+| 发布 / 部署 / 更新新版本 | `scripts/deploy.sh [test\|prod]`(见下)|
 | 只在本地出包 | 仓库根跑 `./gradlew clean bootJar`(JDK 11 已由 gradle.properties 指定)|
-| 查状态 / 重启 / 停 / 看日志 / 回滚 | `scripts/service.sh <status\|restart\|stop\|start\|logs\|rollback>` |
+| 查状态 / 重启 / 停 / 看日志 / 回滚 | `scripts/service.sh [test\|prod] <status\|restart\|stop\|start\|logs\|rollback>` |
 
 ## 发布流程(先测服 236 → 再正服 235)
 
 发布会**短暂重启服务**(正服对外可见)。执行前先与用户确认发布哪个版本、哪个环境。
 
-1. **先发测服验证**:
+1. **先在测服验证**(测服 = 用时现搭、用完清干净,不常驻):
    ```bash
-   bash scripts/deploy.sh test --build       # 构建并发到 236 测服(test 为默认,可省略)
+   bash scripts/testenv-setup.sh             # 从零搭建 236 并部署(建库/config/证书/jar/nohup 启动)
+   # 造数据:把 scripts/testdata/mock.sh + 图标 scp 到 236 后 ssh 执行(见脚本头部)
+   # 到 http://10.2.54.236:8082/apps 验证功能
+   bash scripts/testenv-teardown.sh          # 测完彻底清理(停 app/删库/删目录)
    ```
-   到 http://10.2.54.236:8082/apps 验证功能;需要测试数据用 `scripts/testdata/mock.sh`(见 references)。
+   同一轮换新 jar 重发用 `bash scripts/deploy.sh test --build`(目录已在时)。
 2. **测通后走 git 发版**(正式发布):用 `/git` skill 把 `develop` 合入 `release` 并打 tag `vX.Y.Z`(对齐 `build.gradle` 的 `version`)。
 3. **发正服(需显式 prod + 用户确认)**:
    ```bash

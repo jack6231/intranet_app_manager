@@ -14,6 +14,7 @@ import org.yzr.service.AppService;
 import org.yzr.service.PackageService;
 import org.yzr.utils.PathManager;
 import org.yzr.utils.QRCodeUtil;
+import org.yzr.utils.parser.CommitExtractor;
 import org.yzr.utils.ipa.PlistGenerator;
 import org.yzr.utils.webhook.WebHookClient;
 import org.yzr.vo.AppViewModel;
@@ -24,6 +25,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,6 +37,45 @@ public class PackageController {
     private PackageService packageService;
     @Resource
     private PathManager pathManager;
+
+    /**
+     * 按 git commit 查安装包（给 CI 用）
+     *
+     * CI 拿到目标 commit 后先问这个接口有没有现成的包，命中就直接下载安装，省掉一次编译。
+     *
+     * GET /p/byCommit?commit=<sha>&bundleID=<可选>
+     *   commit   必填。可以是短 hash 也可以是全 SHA —— 服务端做双向前缀匹配
+     *            （iOS 的 Info.plist 里存的是 10 位短 hash，而调用方通常拿的是 40 位全 SHA）
+     *   bundleID 选填。不传则跨应用查同一 commit
+     *
+     * 可选 e2eBuild=1：只要 TP_E2E 构建的包（Info.plist TPE2EBuild=1），供 E2E 运行器按 commit + 构建类型双字段匹配。
+     * 返回 { success, count, packages: [...] }，最新的包在前；每个元素含 downloadURL / gitCommit / tpE2EBuild。
+     * 没命中时 success=true、count=0（不是错误，调用方据此走编译流程）。
+     */
+    @RequestMapping("/p/byCommit")
+    @ResponseBody
+    public Map<String, Object> findByCommit(@RequestParam(value = "commit", required = false) String commit,
+                                            @RequestParam(value = "bundleID", required = false) String bundleID,
+                                            @RequestParam(value = "e2eBuild", required = false) String e2eBuild,
+                                            HttpServletRequest request) {
+        Map<String, Object> map = new HashMap<>();
+        if (commit == null || commit.trim().isEmpty()) {
+            map.put("success", false);
+            map.put("message", "commit 不能为空");
+            return map;
+        }
+        try {
+            List<PackageViewModel> packages =
+                    this.packageService.findByCommit(bundleID, commit.trim(), e2eBuild, request);
+            map.put("success", true);
+            map.put("count", packages.size());
+            map.put("packages", packages);
+        } catch (Exception e) {
+            map.put("success", false);
+            map.put("message", e.getMessage());
+        }
+        return map;
+    }
 
     /**
      * 预览页
@@ -105,6 +146,18 @@ public class PackageController {
             }
             if (!extra.isEmpty()) {
                 aPackage.setExtra(JSON.toJSONString(extra));
+            }
+            // commit 来源：**包内解析优先，参数兜底**。
+            //   iOS 的 ipa 里有 GIT_COMMIT_HASH，解析即得，不需要也不该传参数
+            //     —— 从包里读的值不可能和包对不上，传参数则有传错的可能。
+            //   Android 的 apk/aab 目前**没有**这个字段（工程还没加 manifestPlaceholders
+            //     注入 <meta-data android:name="GIT_COMMIT_HASH">），只能由调用方传。
+            // 一旦 Android 工程补上 manifest 注入，这里会自动走解析路径，参数自然失效。
+            if (aPackage.getGitCommit() == null) {
+                String commitParam = request.getParameter("gitCommit");
+                if (StringUtils.hasLength(commitParam)) {
+                    aPackage.setGitCommit(CommitExtractor.normalize(commitParam));
+                }
             }
             App app = this.appService.getByPackage(aPackage);
             app.getPackageList().add(aPackage);

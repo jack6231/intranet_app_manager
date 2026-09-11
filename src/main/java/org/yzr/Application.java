@@ -11,10 +11,12 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import javax.annotation.Resource;
 
 @SpringBootApplication
+@EnableScheduling   // 启用定时任务（org.yzr.task.CleanupScheduler：定时清理过期安装包）
 //@EnableJpaRepositories("org.yzr.dao") // JPA扫描该包路径下的Repositorie
 //@EntityScan("org.yzr.model") // 扫描Entity实体类
 public class Application {
