@@ -48,13 +48,15 @@ public class PackageController {
      *            （iOS 的 Info.plist 里存的是 10 位短 hash，而调用方通常拿的是 40 位全 SHA）
      *   bundleID 选填。不传则跨应用查同一 commit
      *
-     * 返回 { success, count, packages: [...] }，最新的包在前；每个元素含 downloadURL / gitCommit。
+     * 可选 e2eBuild=1：只要 TP_E2E 构建的包（Info.plist TPE2EBuild=1），供 E2E 运行器按 commit + 构建类型双字段匹配。
+     * 返回 { success, count, packages: [...] }，最新的包在前；每个元素含 downloadURL / gitCommit / tpE2EBuild。
      * 没命中时 success=true、count=0（不是错误，调用方据此走编译流程）。
      */
     @RequestMapping("/p/byCommit")
     @ResponseBody
     public Map<String, Object> findByCommit(@RequestParam(value = "commit", required = false) String commit,
                                             @RequestParam(value = "bundleID", required = false) String bundleID,
+                                            @RequestParam(value = "e2eBuild", required = false) String e2eBuild,
                                             HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();
         if (commit == null || commit.trim().isEmpty()) {
@@ -64,7 +66,7 @@ public class PackageController {
         }
         try {
             List<PackageViewModel> packages =
-                    this.packageService.findByCommit(bundleID, commit.trim(), request);
+                    this.packageService.findByCommit(bundleID, commit.trim(), e2eBuild, request);
             map.put("success", true);
             map.put("count", packages.size());
             map.put("packages", packages);

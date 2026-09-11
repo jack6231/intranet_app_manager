@@ -17,6 +17,18 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 public class IPAParser implements PackageParser {
+
+    /** iOS 工程 Info.plist 里的 E2E 构建标记键，与 Trucker_Path_Pro*-Info.plist 的 TPE2EBuild 对应 */
+    public static final String E2E_BUILD_KEY = "TPE2EBuild";
+
+    /** 空串（Release 包里 $(TP_E2E_BUILD) 展开为空）与缺失都视为「不是 E2E 构建」，统一存 null */
+    static String normalizeE2EBuild(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String v = raw.trim();
+        return v.isEmpty() ? null : v;
+    }
     @Override
     public Package parse(String filePath) {
         try {
@@ -47,6 +59,8 @@ public class IPAParser implements PackageParser {
             aPackage.setPlatform("ios");
             // 构建该包的 git commit：Xcode build phase 已经在写这个字段（实测值形如 192505ceaa）
             aPackage.setGitCommit(CommitExtractor.normalize(infoPlist.stringValueForPath(CommitExtractor.KEY)));
+            // 是否 E2E 构建：Xcode 在 Process Info.plist 阶段把 $(TP_E2E_BUILD) 替换成 "1"（Debug）或空串（Release）
+            aPackage.setTpE2EBuild(normalizeE2EBuild(infoPlist.stringValueForPath(E2E_BUILD_KEY)));
 
             // 获取应用图标
             String iconName = infoPlist.stringValueForKeyPath("CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName");

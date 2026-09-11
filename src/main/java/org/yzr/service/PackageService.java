@@ -79,9 +79,23 @@ public class PackageService {
      */
     @Transactional
     public List<PackageViewModel> findByCommit(String bundleID, String commit, HttpServletRequest request) {
+        return findByCommit(bundleID, commit, null, request);
+    }
+
+    /**
+     * 同上，再按 iOS 包的 E2E 构建标记过滤。
+     *
+     * @param tpE2EBuild 传 "1" 只要 TP_E2E 构建的包（Info.plist TPE2EBuild=1，带沙盒覆盖文件加载器）；
+     *                   传空/null 不过滤，保持原行为。同一 commit 通常同时有打包机的 Release 包和
+     *                   E2E Job 自编的 Debug 包，运行器必须拿到后者，否则 plist 预置只能退回 legacy 模式。
+     */
+    @Transactional
+    public List<PackageViewModel> findByCommit(String bundleID, String commit, String tpE2EBuild,
+                                               HttpServletRequest request) {
         List<Package> packages = (bundleID == null || bundleID.trim().isEmpty())
                 ? this.packageDao.findByCommit(commit)
                 : this.packageDao.findByBundleIDAndCommit(bundleID.trim(), commit);
+        packages = filterByE2EBuild(packages, tpE2EBuild);
         List<PackageViewModel> result = new ArrayList<>();
         if (packages != null) {
             for (Package aPackage : packages) {
@@ -89,6 +103,21 @@ public class PackageService {
             }
         }
         return result;
+    }
+
+    /** tpE2EBuild 为空则原样返回；否则只保留 getTpE2EBuild() 与之相等的包（null 视为不相等）。纯函数，便于单测。 */
+    static List<Package> filterByE2EBuild(List<Package> packages, String tpE2EBuild) {
+        if (packages == null || tpE2EBuild == null || tpE2EBuild.trim().isEmpty()) {
+            return packages;
+        }
+        String want = tpE2EBuild.trim();
+        List<Package> out = new ArrayList<>();
+        for (Package p : packages) {
+            if (want.equals(p.getTpE2EBuild())) {
+                out.add(p);
+            }
+        }
+        return out;
     }
 
     @Transactional
