@@ -56,10 +56,10 @@ public class AscScriptsTests {
     }
 
     @Test
-    public void parseBuildNumberFromSummary() {
-        String out = "...\n<dict>\n<key>buildNumber</key>\n\t<string>971901</string>\n<key>versionNumber</key>";
-        assertEquals("971901", AscScripts.parseBuildNumber(out));
-        assertNull(AscScripts.parseBuildNumber("no summary"));
+    public void parseBuildNumberFromScriptOutput() {
+        String out = "Upload succeeded.\n** EXPORT SUCCEEDED **\n[asc] buildNumber=71701\n[asc] xcodebuild exit=0";
+        assertEquals("71701", AscScripts.parseBuildNumber(out));
+        assertNull(AscScripts.parseBuildNumber("no build number"));
     }
 
     @Test

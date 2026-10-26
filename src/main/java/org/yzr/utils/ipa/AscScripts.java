@@ -12,8 +12,7 @@ import java.util.regex.Pattern;
  */
 public class AscScripts {
 
-    private static final Pattern BUILD_NUMBER =
-            Pattern.compile("<key>buildNumber</key>\\s*<string>([^<]+)</string>");
+    private static final Pattern BUILD_NUMBER = Pattern.compile("\\[asc\\] buildNumber=(\\S+)");
 
     private AscScripts() {
     }
@@ -95,12 +94,16 @@ public class AscScripts {
           .append(exportOptions(teamId))
           .append("PLIST\n")
           .append("echo \"[asc] host=$(hostname) archive=$ARCHIVE\"\n")
+          .append("set -o pipefail\n")
           .append("xcodebuild -exportArchive -archivePath \"$ARCHIVE\" -exportPath \"$TMP/out\"")
-          .append(" -exportOptionsPlist \"$TMP/ExportOptions.plist\" -allowProvisioningUpdates\n")
+          .append(" -exportOptionsPlist \"$TMP/ExportOptions.plist\" -allowProvisioningUpdates 2>&1 | tee \"$TMP/xcodebuild.log\"\n")
           .append("rc=$?\n")
-          .append("if [ -f \"$TMP/out/DistributionSummary.plist\" ]; then\n")
-          .append("  echo '[asc] DistributionSummary:'\n")
-          .append("  plutil -convert xml1 -o - \"$TMP/out/DistributionSummary.plist\"\n")
+          // destination=upload 不产出 DistributionSummary.plist；实际 build 号在分发日志 ContentDelivery.log 的
+          // 建 build 请求里（Xcode 先试原号被 409 拒，再用递增后的号），取最后一次出现的值
+          .append("LOGS=$(grep -o 'Created bundle at path \"[^\"]*\"' \"$TMP/xcodebuild.log\" | head -1 | sed 's/.*path \"//; s/\"$//')\n")
+          .append("if [ -n \"$LOGS\" ]; then\n")
+          .append("  bn=$(grep -ohE '\"cfBundleVersion\":\"[^\"]+\"' \"$LOGS/ContentDelivery.log\" 2>/dev/null | tail -1 | sed -E 's/.*:\"([^\"]+)\"/\\1/')\n")
+          .append("  [ -n \"$bn\" ] && echo \"[asc] buildNumber=$bn\"\n")
           .append("fi\n")
           .append("echo \"[asc] xcodebuild exit=$rc\"\n")
           .append("exit $rc\n");
@@ -126,7 +129,7 @@ public class AscScripts {
         return sb.toString();
     }
 
-    /** 从上传输出里的 DistributionSummary 取实际 build 号；取不到返回 null */
+    /** 从上传脚本输出的「[asc] buildNumber=N」取实际 build 号；取不到返回 null */
     public static String parseBuildNumber(String output) {
         if (output == null) {
             return null;
@@ -164,6 +167,6 @@ public class AscScripts {
         if (l.startsWith("[platform]")) {
             return true;
         }
-        return l.startsWith("[asc]") && !l.contains("host=") && !l.contains("exit=") && !l.contains("DistributionSummary");
+        return l.startsWith("[asc]") && !l.contains("host=") && !l.contains("exit=") && !l.contains("buildNumber=");
     }
 }
