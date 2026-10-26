@@ -160,7 +160,7 @@ function loadAscStates() {
         });
         clearTimeout(ascPollTimer);
         if (uploading) {
-            ascPollTimer = setTimeout(loadAscStates, 15000);
+            ascPollTimer = setTimeout(loadAscStates, 3000);
         }
     });
 }
@@ -178,7 +178,8 @@ function renderAscState(id, state) {
         return '<span class="asc-label asc-done" title="' + escapeHtml(state.uploadTime) + '">已上传 App Store' + build + '</span>' + logLink;
     }
     if (state.status === "UPLOADING") {
-        return '<span class="asc-label">上传 App Store 中…</span>';
+        var progress = state.progress ? "：" + escapeHtml(state.progress) : "中…";
+        return '<span class="asc-label asc-progress">上传 App Store' + progress + '</span>';
     }
     var failed = state.status === "FAILED";
     var html = "";

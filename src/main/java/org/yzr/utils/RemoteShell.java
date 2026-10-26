@@ -1,12 +1,14 @@
 package org.yzr.utils;
 
-import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * 在打包机上执行一段 bash 脚本：ssh user@host bash -s，脚本走 stdin。
@@ -45,6 +47,14 @@ public class RemoteShell {
      * @param timeoutSeconds 超时后强杀 ssh 进程，结果 timedOut=true
      */
     public static Result run(String user, String host, String script, long timeoutSeconds) {
+        return run(user, host, script, timeoutSeconds, null);
+    }
+
+    /**
+     * @param lineListener 每读到一行输出就回调一次（用于实时进度），可为 null
+     */
+    public static Result run(String user, String host, String script, long timeoutSeconds,
+                             Consumer<String> lineListener) {
         List<String> cmd = Arrays.asList("ssh",
                 "-o", "BatchMode=yes",
                 "-o", "ConnectTimeout=5",
@@ -56,7 +66,7 @@ public class RemoteShell {
             try (OutputStream stdin = process.getOutputStream()) {
                 stdin.write(script.getBytes(StandardCharsets.UTF_8));
             }
-            StreamCollector collector = new StreamCollector(process.getInputStream());
+            LineCollector collector = new LineCollector(process.getInputStream(), lineListener);
             collector.start();
             boolean finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS);
             if (!finished) {
@@ -75,24 +85,32 @@ public class RemoteShell {
         }
     }
 
-    /** 后台读取输出，避免管道写满导致子进程阻塞 */
-    private static class StreamCollector extends Thread {
+    /** 后台按行读取输出，避免管道写满导致子进程阻塞；每行可回调 listener */
+    private static class LineCollector extends Thread {
         private final InputStream in;
-        private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        private final Consumer<String> listener;
+        private final StringBuilder buffer = new StringBuilder();
 
-        StreamCollector(InputStream in) {
+        LineCollector(InputStream in, Consumer<String> listener) {
             this.in = in;
+            this.listener = listener;
             setDaemon(true);
         }
 
         @Override
         public void run() {
-            byte[] chunk = new byte[8192];
-            int n;
-            try {
-                while ((n = in.read(chunk)) != -1) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
                     synchronized (buffer) {
-                        buffer.write(chunk, 0, n);
+                        buffer.append(line).append('\n');
+                    }
+                    if (listener != null) {
+                        try {
+                            listener.accept(line);
+                        } catch (Exception ignored) {
+                            // 进度回调出错不影响输出收集
+                        }
                     }
                 }
             } catch (Exception ignored) {
@@ -102,7 +120,7 @@ public class RemoteShell {
 
         String text() {
             synchronized (buffer) {
-                return new String(buffer.toByteArray(), StandardCharsets.UTF_8);
+                return buffer.toString();
             }
         }
     }

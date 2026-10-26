@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.yzr.service.AppService;
+import org.yzr.service.OperationLogService;
 import org.yzr.utils.PathManager;
 import org.yzr.vo.AppViewModel;
 
@@ -22,6 +23,8 @@ public class AppController {
     private AppService appService;
     @Resource
     private PathManager pathManager;
+    @Resource
+    private OperationLogService operationLogService;
 
     @GetMapping("/apps")
     public String apps(HttpServletRequest request) {
@@ -62,14 +65,18 @@ public class AppController {
 
     @RequestMapping("/app/delete/{id}")
     @ResponseBody
-    public Map<String, Object> deleteById(@PathVariable("id") String id) {
+    public Map<String, Object> deleteById(@PathVariable("id") String id, HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();
+        // 删除前先取描述，删完就查不到了
+        String target = this.operationLogService.describeApp(id);
         try {
             this.appService.deleteById(id);
             map.put("success", true);
         } catch (Exception e) {
             map.put("success", false);
         }
+        this.operationLogService.record(request, OperationLogService.DELETE_APP, id, target,
+                Boolean.TRUE.equals(map.get("success")) ? "成功" : "失败");
         return map;
     }
 
@@ -80,7 +87,8 @@ public class AppController {
      */
     @RequestMapping("/app/clean/{appID}/{days}")
     @ResponseBody
-    public Map<String, Object> clean(@PathVariable("appID") String appID, @PathVariable("days") int days) {
+    public Map<String, Object> clean(@PathVariable("appID") String appID, @PathVariable("days") int days,
+                                     HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();
         try {
             int count = this.appService.cleanExpiredPackages(appID, days);
@@ -90,6 +98,9 @@ public class AppController {
             map.put("success", false);
             e.printStackTrace();
         }
+        this.operationLogService.record(request, OperationLogService.CLEAN, appID,
+                this.operationLogService.describeApp(appID) + " " + days + " 天前",
+                Boolean.TRUE.equals(map.get("success")) ? "删除 " + map.get("count") + " 个包" : "失败");
         return map;
     }
 

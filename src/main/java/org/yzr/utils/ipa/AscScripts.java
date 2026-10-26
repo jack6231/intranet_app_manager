@@ -13,6 +13,24 @@ import java.util.regex.Pattern;
 public class AscScripts {
 
     private static final Pattern BUILD_NUMBER = Pattern.compile("\\[asc\\] buildNumber=(\\S+)");
+    // xcodebuild 上传阶段的进度行：Progress 97%: Uploading to App Store Connect… (About 2 seconds remaining. 8.28MB/s)
+    private static final Pattern PROGRESS = Pattern.compile("Progress (\\d+)%: ([^…(]+)");
+    private static final Pattern SPEED = Pattern.compile("([0-9.]+\\s*[KMG]B/s)");
+    // 进度行英文阶段 → 页面显示的阶段名（前缀匹配）；没列到的原样显示
+    private static final String[][] STAGES = {
+            {"Making copy", "上传预检"},
+            {"Preparing to upload", "上传预检"},
+            {"Analyzing package", "上传预检"},
+            {"Requesting upload instructions", "上传预检"},
+            {"Sending analysis", "上传预检"},
+            {"Waiting for App Store Connect analysis", "上传预检"},
+            {"Preparing file for upload", "准备上传"},
+            {"Uploading to App Store Connect", "上传中"},
+            {"Completing upload", "完成上传"},
+            {"Waiting for package to begin processing", "Apple 处理中"},
+            {"Uploaded package is processing", "Apple 处理中"},
+            {"Upload succeeded", "上传成功"},
+    };
 
     private AscScripts() {
     }
@@ -126,6 +144,34 @@ public class AscScripts {
             sb.append("\t<key>teamID</key>\n\t<string>").append(teamId).append("</string>\n");
         }
         sb.append("</dict>\n</plist>\n");
+        return sb.toString();
+    }
+
+    /**
+     * 把一行 xcodebuild 输出转成页面进度文案，如「上传中 97% · 8.28MB/s」；不是进度行返回 null。
+     * 进度行只在签名打包完成后才出现（#1116 实测前约 2 分半没有百分比），之前由调用方显示「签名打包中」。
+     */
+    public static String parseProgress(String line) {
+        if (line == null) {
+            return null;
+        }
+        Matcher m = PROGRESS.matcher(line);
+        if (!m.find()) {
+            return null;
+        }
+        String raw = m.group(2).trim();
+        String stage = raw;
+        for (String[] s : STAGES) {
+            if (raw.startsWith(s[0])) {
+                stage = s[1];
+                break;
+            }
+        }
+        StringBuilder sb = new StringBuilder(stage).append(' ').append(m.group(1)).append('%');
+        Matcher speed = SPEED.matcher(line);
+        if (speed.find()) {
+            sb.append(" · ").append(speed.group(1));
+        }
         return sb.toString();
     }
 

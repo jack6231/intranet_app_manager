@@ -1302,3 +1302,6 @@ body {
     font-size: 12px;
     vertical-align: middle;
 }
+.asc-label.asc-progress {
+    color: #1a7f5a;
+}

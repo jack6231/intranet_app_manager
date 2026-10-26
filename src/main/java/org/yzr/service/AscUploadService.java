@@ -62,6 +62,8 @@ public class AscUploadService {
     });
     // 包 id → 探测结果（带时间戳），避免每次刷新列表都 SSH
     private final Map<String, CachedProbe> probeCache = new ConcurrentHashMap<>();
+    // 包 id → 上传中的实时进度文案（只在内存，上传结束即移除）
+    private final Map<String, String> progress = new ConcurrentHashMap<>();
 
     private static class CachedProbe {
         final boolean available;
@@ -111,7 +113,11 @@ public class AscUploadService {
             if (p.getAscStatus() == null && !hasArchive) {
                 continue;
             }
-            result.put(p.getId(), baseState(p));
+            Map<String, Object> state = baseState(p);
+            if (UPLOADING.equals(p.getAscStatus())) {
+                state.put("progress", progress.get(p.getId()));
+            }
+            result.put(p.getId(), state);
             if (hasArchive && !UPLOADED.equals(p.getAscStatus()) && !UPLOADING.equals(p.getAscStatus())) {
                 toProbe.put(p.getId(), p);
             }
@@ -152,6 +158,7 @@ public class AscUploadService {
         p.setAscStatus(UPLOADING);
         p.setAscMessage(null);
         packageDao.save(p);
+        progress.put(packageId, "排队中");
         executor.submit(() -> runUpload(packageId));
     }
 
@@ -166,13 +173,28 @@ public class AscUploadService {
     }
 
     private void runUpload(String packageId) {
+        try {
+            doUpload(packageId);
+        } finally {
+            progress.remove(packageId);
+        }
+    }
+
+    private void doUpload(String packageId) {
         Package p = packageDao.findById(packageId).orElse(null);
         if (p == null) {
             return;
         }
         String host = hostOf(p.getArchiveNode());
         String script = AscScripts.uploadScript(p.getArchivePath(), teamId, keychainPassword);
-        RemoteShell.Result r = RemoteShell.run(sshUser, host, script, uploadTimeoutMinutes * 60);
+        // 签名打包阶段 xcodebuild 不打百分比，先显示阶段；进入上传后由进度行覆盖
+        progress.put(packageId, "签名打包中（约 2~3 分钟）");
+        RemoteShell.Result r = RemoteShell.run(sshUser, host, script, uploadTimeoutMinutes * 60, line -> {
+            String text = AscScripts.parseProgress(line);
+            if (text != null) {
+                progress.put(packageId, text);
+            }
+        });
         writeLog(p, host, r);
 
         // 上传期间包可能被删除，重新取一次再落状态

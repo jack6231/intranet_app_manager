@@ -6,8 +6,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.yzr.service.AscUploadService;
+import org.yzr.service.OperationLogService;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +24,8 @@ public class AscController {
 
     @Resource
     private AscUploadService ascUploadService;
+    @Resource
+    private OperationLogService operationLogService;
 
     /**
      * 某 App 下 iOS 包的上传状态 + archive 是否可用
@@ -45,8 +49,9 @@ public class AscController {
     /** 发起上传（异步），立即返回；前端轮询 state 看结果 */
     @RequestMapping("/asc/upload/{id}")
     @ResponseBody
-    public Map<String, Object> upload(@PathVariable("id") String id) {
+    public Map<String, Object> upload(@PathVariable("id") String id, HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();
+        String target = operationLogService.describePackage(id);
         try {
             ascUploadService.startUpload(id);
             map.put("success", true);
@@ -58,6 +63,8 @@ public class AscController {
             map.put("message", "发起上传失败: " + e.getMessage());
             e.printStackTrace();
         }
+        operationLogService.record(request, OperationLogService.ASC_UPLOAD, id, target,
+                Boolean.TRUE.equals(map.get("success")) ? "已发起" : "未发起: " + map.get("message"));
         return map;
     }
 

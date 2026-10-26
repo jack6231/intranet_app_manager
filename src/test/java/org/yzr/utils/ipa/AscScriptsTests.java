@@ -63,6 +63,16 @@ public class AscScriptsTests {
     }
 
     @Test
+    public void parseProgressFromXcodebuildLines() {
+        assertEquals("上传中 97% · 8.28MB/s", AscScripts.parseProgress(
+                "2026-10-26 15:16:56.623 xcodebuild[26253:15478776] Progress 97%: Uploading to App Store Connect… (About 2 seconds remaining. 8.28MB/s)"));
+        assertEquals("上传预检 0%", AscScripts.parseProgress(
+                "2026-10-26 15:13:04.734 xcodebuild[26253:15463964] Progress 0%: Making copy of ‘Trucker Path.ipa’…"));
+        assertEquals("Something new 5%", AscScripts.parseProgress("xcodebuild[1] Progress 5%: Something new…"));
+        assertNull(AscScripts.parseProgress("** EXPORT SUCCEEDED **"));
+    }
+
+    @Test
     public void failureSummaryPrefersErrorLines() {
         String out = "line1\nerror: Failed to authenticate\nfoo\n[asc] host=x\n[asc] xcodebuild exit=70";
         assertEquals("error: Failed to authenticate", AscScripts.failureSummary(out, 1000));

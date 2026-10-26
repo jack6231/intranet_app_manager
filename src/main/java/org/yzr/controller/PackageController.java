@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.yzr.model.App;
 import org.yzr.model.Package;
 import org.yzr.service.AppService;
+import org.yzr.service.OperationLogService;
 import org.yzr.service.PackageService;
 import org.yzr.utils.PathManager;
 import org.yzr.utils.QRCodeUtil;
@@ -37,6 +38,8 @@ public class PackageController {
     private PackageService packageService;
     @Resource
     private PathManager pathManager;
+    @Resource
+    private OperationLogService operationLogService;
 
     /**
      * 按 git commit 查安装包（给 CI 用）
@@ -269,20 +272,25 @@ public class PackageController {
      */
     @RequestMapping("/p/delete/{id}")
     @ResponseBody
-    public Map<String, Object> deleteById(@PathVariable("id") String id) {
+    public Map<String, Object> deleteById(@PathVariable("id") String id, HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();
+        // 删除前先取描述，删完就查不到了
+        String target = this.operationLogService.describePackage(id);
         try {
             this.packageService.deleteById(id);
             map.put("success", true);
         } catch (Exception e) {
             map.put("success", false);
         }
+        this.operationLogService.record(request, OperationLogService.DELETE_PACKAGE, id, target,
+                Boolean.TRUE.equals(map.get("success")) ? "成功" : "失败");
         return map;
     }
 
     @RequestMapping("/p/update/{id}/{isRelease}")
     @ResponseBody
-    public Map<String, Object> deleteById(@PathVariable("id") String id, @PathVariable("isRelease") Boolean isRelease) {
+    public Map<String, Object> deleteById(@PathVariable("id") String id, @PathVariable("isRelease") Boolean isRelease,
+                                          HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();
         try {
             this.packageService.updateById(id, isRelease);
@@ -290,6 +298,10 @@ public class PackageController {
         } catch (Exception e) {
             map.put("success", false);
         }
+        this.operationLogService.record(request,
+                Boolean.TRUE.equals(isRelease) ? OperationLogService.RELEASE : OperationLogService.UNRELEASE,
+                id, this.operationLogService.describePackage(id),
+                Boolean.TRUE.equals(map.get("success")) ? "成功" : "失败");
         return map;
     }
 
