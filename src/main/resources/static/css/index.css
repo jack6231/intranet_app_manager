@@ -1273,3 +1273,32 @@ body {
 .clean-btn:hover {
     background: #e8543a;
 }
+/* 上传 App Store Connect（list.js renderAscState） */
+.directive-view-release .release-actions .asc-upload {
+    color: #1a7f5a;
+    border-color: #1a7f5a;
+}
+.directive-view-release .release-actions .asc-upload[disabled] {
+    opacity: .5;
+    cursor: default;
+}
+.asc-label {
+    display: inline-block;
+    margin-right: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #888;
+    vertical-align: middle;
+}
+.asc-label.asc-done {
+    color: #1a7f5a;
+}
+.asc-label.asc-failed {
+    color: #e8543a;
+    cursor: help;
+}
+.asc-log {
+    margin-right: 8px;
+    font-size: 12px;
+    vertical-align: middle;
+}

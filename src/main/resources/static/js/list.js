@@ -108,6 +108,10 @@ function getPackageList() {
                 packageList += '<i class="icon-eye"></i>';
                 packageList += '<span class="ng-binding"> 预览</span>';
                 packageList += '</button>';
+                // 上传 App Store 的位置：内容由 loadAscStates() 按探测结果异步填充
+                if (package.iOS) {
+                    packageList += '<span class="asc-slot" data="' + id + '"></span>';
+                }
                 // 动态添加删除按钮的显示和隐藏类
                 packageList += '<button class="ng-scope app-delete ' + deleteButtonClass + '" data="' + id + '">';
                 packageList += '<i class="icon-trash"></i>';
@@ -125,10 +129,84 @@ function getPackageList() {
             $("#app-activity-panel").append(packageList);
 
             bindActions();
+            loadAscStates();
         }
     });
 
 }
+
+var ascPollTimer = null;
+
+/**
+ * 拉取 iOS 包的 App Store 上传状态并渲染：
+ *   已上传 → 标签；上传中 → 标签并轮询；archive 还在 → 上传按钮；否则不显示
+ */
+function loadAscStates() {
+    if ($(".asc-slot").length === 0) {
+        return;
+    }
+    var appId = $("#appId").val();
+    $.post("/asc/state/" + appId, function (result) {
+        if (!result.success) {
+            return;
+        }
+        var uploading = false;
+        $(".asc-slot").each(function () {
+            var state = result.states[$(this).attr("data")];
+            $(this).html(state ? renderAscState($(this).attr("data"), state) : "");
+            if (state && state.status === "UPLOADING") {
+                uploading = true;
+            }
+        });
+        clearTimeout(ascPollTimer);
+        if (uploading) {
+            ascPollTimer = setTimeout(loadAscStates, 15000);
+        }
+    });
+}
+
+function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c];
+    });
+}
+
+function renderAscState(id, state) {
+    var logLink = '<a class="asc-log" href="/asc/log/' + id + '" target="_blank">日志</a>';
+    if (state.status === "UPLOADED") {
+        var build = state.buildVersion ? " · Build " + escapeHtml(state.buildVersion) : "";
+        return '<span class="asc-label asc-done" title="' + escapeHtml(state.uploadTime) + '">已上传 App Store' + build + '</span>' + logLink;
+    }
+    if (state.status === "UPLOADING") {
+        return '<span class="asc-label">上传 App Store 中…</span>';
+    }
+    var failed = state.status === "FAILED";
+    var html = "";
+    if (state.available) {
+        html += '<button class="asc-upload" data="' + id + '">' + (failed ? "重新上传 App Store" : "上传 App Store") + '</button>';
+    }
+    if (failed) {
+        html += '<span class="asc-label asc-failed" title="' + escapeHtml(state.message) + '">上次上传失败</span>' + logLink;
+    }
+    return html;
+}
+
+$(document).on("click", ".asc-upload", function () {
+    var id = $(this).attr("data");
+    if (!confirm("确定把这个包上传到 App Store Connect?\nbuild 号由 Xcode 自动递增，上传后不可撤回")) {
+        return;
+    }
+    var button = $(this);
+    button.attr("disabled", "disabled");
+    $.post("/asc/upload/" + id, function (result) {
+        if (result.success) {
+            toastr.success("已开始上传，完成后自动刷新状态");
+        } else {
+            toastr.error(result.message || "发起上传失败");
+        }
+        loadAscStates();
+    });
+});
 
 /**
  * 构造数据

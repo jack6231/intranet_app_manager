@@ -30,6 +30,9 @@ public interface PackageDao extends CrudRepository <Package, String > {
     List<Package> findByBundleIDAndCommit(@Param("bundleID") String bundleID,
                                           @Param("commit") String commit);
 
+    /** 按 App Store Connect 上传状态找包（服务启动时把残留的 UPLOADING 改成 FAILED） */
+    List<Package> findByAscStatus(String ascStatus);
+
     /** 同上，但不限 bundleID（跨应用查同一 commit 的包） */
     @Query("select p from Package p where p.gitCommit is not null and p.gitCommit <> '' "
             + "and (p.gitCommit = :commit "

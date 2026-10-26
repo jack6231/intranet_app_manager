@@ -159,6 +159,14 @@ public class PackageController {
                     aPackage.setGitCommit(CommitExtractor.normalize(commitParam));
                 }
             }
+            // iOS 打包 Job 额外带上 .xcarchive 的位置，供「上传 App Store」按需找回 archive
+            String archiveNode = request.getParameter("archiveNode");
+            String archivePath = request.getParameter("archivePath");
+            if ("ios".equals(aPackage.getPlatform())
+                    && StringUtils.hasLength(archiveNode) && StringUtils.hasLength(archivePath)) {
+                aPackage.setArchiveNode(archiveNode.trim());
+                aPackage.setArchivePath(archivePath.trim());
+            }
             App app = this.appService.getByPackage(aPackage);
             app.getPackageList().add(aPackage);
             app.setCurrentPackage(aPackage);

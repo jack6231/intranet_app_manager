@@ -44,6 +44,23 @@ public class Package {
     private String fileName;
     // 是否是 定版包
     private boolean isRelease;
+    // 打出该包的 Jenkins 节点名（Jenkins-01 / Jenkins-02），仅 iOS 打包 Job 上传时带；用于找回 .xcarchive
+    @Column(length = 32)
+    private String archiveNode;
+    // 该包对应 .xcarchive 在打包机上的绝对路径（文件可能已被打包机清理，以实时探测为准）
+    @Column(length = 512)
+    private String archivePath;
+    // 上传 App Store Connect 的状态：null=未上传 / UPLOADING / UPLOADED / FAILED
+    @Column(length = 16)
+    private String ascStatus;
+    // 上传时 Xcode 自动递增后实际使用的 build 号（取不到时为 null）
+    @Column(length = 32)
+    private String ascBuildVersion;
+    // 最近一次上传结束（成功或失败）的时间，毫秒；用包装类型，历史行加列后为 NULL
+    private Long ascUploadTime;
+    // 最近一次上传的结果摘要（失败原因等），完整日志在包目录 asc_upload.log
+    @Column(length = 1024)
+    private String ascMessage;
 
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumn(name="appId")
@@ -179,5 +196,53 @@ public class Package {
 
     public void setIsRelease(boolean isRelease) {
         this.isRelease = isRelease;
+    }
+
+    public String getArchiveNode() {
+        return archiveNode;
+    }
+
+    public void setArchiveNode(String archiveNode) {
+        this.archiveNode = archiveNode;
+    }
+
+    public String getArchivePath() {
+        return archivePath;
+    }
+
+    public void setArchivePath(String archivePath) {
+        this.archivePath = archivePath;
+    }
+
+    public String getAscStatus() {
+        return ascStatus;
+    }
+
+    public void setAscStatus(String ascStatus) {
+        this.ascStatus = ascStatus;
+    }
+
+    public String getAscBuildVersion() {
+        return ascBuildVersion;
+    }
+
+    public void setAscBuildVersion(String ascBuildVersion) {
+        this.ascBuildVersion = ascBuildVersion;
+    }
+
+    public Long getAscUploadTime() {
+        return ascUploadTime;
+    }
+
+    public void setAscUploadTime(Long ascUploadTime) {
+        this.ascUploadTime = ascUploadTime;
+    }
+
+    public String getAscMessage() {
+        return ascMessage;
+    }
+
+    public void setAscMessage(String ascMessage) {
+        this.ascMessage = ascMessage;
     }
 }
