@@ -37,6 +37,8 @@ public class AuthController {
             error = "用户名或密码错误";
         } else if (request.getParameter("expired") != null) {
             error = "页面已过期，请重新登录";
+        } else if (request.getParameter("denied") != null) {
+            error = "该页面需要管理员账号，请用管理员账号登录";
         }
         return render(model, "login", next, error, null);
     }

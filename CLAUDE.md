@@ -62,6 +62,7 @@ java -jar build/libs/intranet_app_manager-<version>.jar  # 部署运行
 | `/p/code/{id}` | 生成包二维码 PNG（zxing） |
 | `/p/update/{id}/{isRelease}`、`*/delete/*` | 定版 / 删除 |
 | `/login`、`/register`、`/logout` | 登录 / 注册 / 退出（1.0.14） |
+| `/admin`、`/admin/accounts/{id}/delete` | 管理页（仅管理员）：账号、操作记录、App Store 上传人 |
 
 ### 登录（1.0.14，`config/SecurityConfig`）
 
@@ -70,6 +71,7 @@ java -jar build/libs/intranet_app_manager-<version>.jar  # 部署运行
 - HTTP 端口不能标 `secure=true`：Tomcat 会给会话 cookie 加 Secure，浏览器在 http 下不收，登录态存不住（见 `Application.httpConnector`）。
 - 本项目继承 `WebMvcConfigurationSupport`，没有 Boot 的 MVC 自动配置：控制器里用 `"redirect:"` 会把 model（含 `CurrentUserAdvice` 的属性）拼进跳转地址，跳转改用 `RedirectView` 并关掉 `exposeModelAttributes`。
 - 线上外置配置需设 `app.security.remember-me-key`，否则每次重启后所有人要重新登录。
+- 管理员：`tb_account.is_admin`，只由启动时的 `AdminAccountInitializer` 按 `app.admin.username`（默认 Admin）/`app.admin.password` 创建（已存在不改密码），注册接口保留该用户名。密码只放线上外置配置。管理页的操作记录直接读 `operation.log`（不入库）；账号被删后，其已登录会话在下一次请求时由 `AccountStillExistsFilter` 作废。
 
 ### Jenkins 集成
 

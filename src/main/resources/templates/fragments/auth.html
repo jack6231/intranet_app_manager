@@ -8,9 +8,10 @@
   </th:block>
 </head>
 <body>
-  <!-- 导航栏右侧：已登录显示账号 + 退出，未登录显示 登录 / 注册 -->
+  <!-- 导航栏右侧：已登录显示账号 + 退出（管理员多一个「管理」），未登录显示 登录 / 注册 -->
   <div th:fragment="bar" class="auth-bar">
     <th:block th:if="${currentUser != null}">
+      <a th:if="${isAdmin}" class="auth-admin" href="/admin">管理</a>
       <span class="auth-user" th:text="${currentUser}"></span>
       <form class="auth-logout" method="post" action="/logout">
         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>

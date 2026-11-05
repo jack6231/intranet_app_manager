@@ -111,7 +111,10 @@ function applyLogin(result) {
         .append($('<input type="hidden"/>').attr({name: result.csrfParameter, value: result.csrfToken}))
         .append($('<input type="hidden" name="next"/>').val(window.location.pathname))
         .append('<button type="submit">退出</button>');
-    $(".auth-bar").empty()
-        .append($('<span class="auth-user"></span>').text(result.username))
+    var $bar = $(".auth-bar").empty();
+    if (result.admin) {
+        $bar.append('<a class="auth-admin" href="/admin">管理</a>');
+    }
+    $bar.append($('<span class="auth-user"></span>').text(result.username))
         .append($logout);
 }

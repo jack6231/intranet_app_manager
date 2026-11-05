@@ -3,6 +3,8 @@ package org.yzr.service;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
 
 /** 注册参数校验：纯函数 */
@@ -18,6 +20,13 @@ public class AccountServiceValidateTests {
     public void rejectsBadUsername() {
         assertEquals("用户名长度需在 2~32 个字符之间", AccountService.validate("a", "123456", "123456"));
         assertEquals("用户名只能包含中文、字母、数字和 . _ @ -", AccountService.validate("a b", "123456", "123456"));
+    }
+
+    @Test
+    public void adminUsernameIsReservedIgnoringCase() {
+        assertTrue(AccountService.isReserved("admin", "Admin"));
+        assertTrue(AccountService.isReserved("ADMIN", " Admin "));
+        assertFalse(AccountService.isReserved("admin2", "Admin"));
     }
 
     @Test

@@ -9,6 +9,9 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
+import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
@@ -34,6 +37,8 @@ import java.util.UUID;
  * 需要登录的接口只收 POST，并校验 CSRF token（页面通过 meta 标签取 token，见 static/js/auth.js）；
  * CSRF 只对这几个接口和登录/注册/退出生效，其余接口不受影响。
  *
+ * 管理页 /admin（删账号、看操作记录、看 App Store 上传人）只有管理员能进，见 AdminController。
+ *
  * 登录有两个入口：登录页的表单提交（成功/失败都重定向），和页面上的登录弹窗（ajax，返回 JSON）。
  * 登录成功后 Spring Security 会换一个新的 CSRF token，弹窗登录时把新 token 带回去，页面不用刷新就能接着操作。
  */
@@ -45,6 +50,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     /** 必须登录的操作：删除包 / 删除应用 / 清理过期包 / 上传 App Store */
     static final String[] LOGIN_REQUIRED = {"/p/delete/**", "/app/delete/**", "/app/clean/**", "/asc/upload/**"};
+
+    /** 只有管理员能访问 */
+    static final String[] ADMIN_ONLY = {"/admin", "/admin/**"};
 
     /** 登录、注册、退出的表单提交同样校验 CSRF */
     private static final String[] AUTH_FORMS = {"/login", "/register", "/logout"};
@@ -69,13 +77,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.authorizeRequests()
+                .antMatchers(ADMIN_ONLY).hasRole(AccountService.ROLE_ADMIN)
                 .antMatchers(LOGIN_REQUIRED).authenticated()
                 .anyRequest().permitAll()
             .and().formLogin()
                 .loginPage("/login")
                 .successHandler((req, res, auth) -> {
                     if (isAjax(req)) {
-                        writeJson(res, HttpServletResponse.SC_OK, loginSuccessBody(req, auth.getName()));
+                        writeJson(res, HttpServletResponse.SC_OK, loginSuccessBody(req, auth));
                     } else {
                         res.sendRedirect(safeRedirect(req.getParameter("next")));
                     }
@@ -99,25 +108,42 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .and().csrf()
                 .requireCsrfProtectionMatcher(csrfMatcher())
             .and().exceptionHandling()
-                // 受保护接口都是页面 ajax 调用：未登录返回 JSON 401，由 auth.js 统一跳登录页
-                .authenticationEntryPoint((req, res, e) ->
-                        writeJson(res, HttpServletResponse.SC_UNAUTHORIZED, failureBody("请先登录")))
-                // 走到这里只有 CSRF 校验失败（会话过期后页面上的 token 失效）
-                .accessDeniedHandler((req, res, e) -> {
+                // 未登录：页面 ajax 返回 JSON 401（auth.js 弹登录框），直接打开的页面（如 /admin）跳登录页
+                .authenticationEntryPoint((req, res, e) -> {
                     if (isAjax(req)) {
-                        writeJson(res, HttpServletResponse.SC_FORBIDDEN, failureBody("页面已过期，请刷新后重试"));
+                        writeJson(res, HttpServletResponse.SC_UNAUTHORIZED, failureBody("请先登录"));
                     } else {
-                        res.sendRedirect("/login?expired");
+                        res.sendRedirect("/login?next=" + encode(safeRedirect(req.getRequestURI())));
+                    }
+                })
+                .accessDeniedHandler((req, res, e) -> {
+                    if (e instanceof CsrfException) {
+                        // 会话过期后页面上的 token 失效
+                        if (isAjax(req)) {
+                            writeJson(res, HttpServletResponse.SC_FORBIDDEN, failureBody("页面已过期，请刷新后重试"));
+                        } else {
+                            res.sendRedirect("/login?expired");
+                        }
+                    } else if (isAjax(req)) {
+                        writeJson(res, HttpServletResponse.SC_FORBIDDEN, failureBody("需要管理员权限"));
+                    } else {
+                        // 已登录但不是管理员：换管理员账号登录
+                        res.sendRedirect("/login?denied&next=" + encode(safeRedirect(req.getRequestURI())));
                     }
                 })
             .and().headers()
                 // 平台同时以 http/https 提供服务，不能让浏览器记住「只走 https」
-                .httpStrictTransportSecurity().disable();
+                .httpStrictTransportSecurity().disable()
+            .and()
+                .addFilterBefore(new AccountStillExistsFilter(accountService), AnonymousAuthenticationFilter.class);
     }
 
     private static RequestMatcher csrfMatcher() {
         List<RequestMatcher> matchers = new ArrayList<>();
         for (String path : LOGIN_REQUIRED) {
+            matchers.add(new AntPathRequestMatcher(path, "POST"));
+        }
+        for (String path : ADMIN_ONLY) {
             matchers.add(new AntPathRequestMatcher(path, "POST"));
         }
         for (String path : AUTH_FORMS) {
@@ -157,11 +183,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         }
     }
 
-    /** 弹窗登录成功：返回用户名和登录后新换的 CSRF token（读取 token 时才会存进会话） */
-    private static Map<String, Object> loginSuccessBody(HttpServletRequest request, String username) {
+    /** 弹窗登录成功：返回用户名、是否管理员和登录后新换的 CSRF token（读取 token 时才会存进会话） */
+    private static Map<String, Object> loginSuccessBody(HttpServletRequest request, Authentication auth) {
         Map<String, Object> body = new HashMap<>();
         body.put("success", true);
-        body.put("username", username);
+        body.put("username", auth.getName());
+        body.put("admin", auth.getAuthorities().stream()
+                .anyMatch(a -> ("ROLE_" + AccountService.ROLE_ADMIN).equals(a.getAuthority())));
         CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
         if (token != null) {
             body.put("csrfHeader", token.getHeaderName());

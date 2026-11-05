@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="x-ua-compatible" content="IE=edge">
+  <meta name="renderer" content="webkit">
+  <th:block th:replace="fragments/auth :: meta"></th:block>
+  <title>管理</title>
+  <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}" />
+  <link rel="stylesheet" th:href="@{/css/bootstrap.css}">
+  <link rel="stylesheet" th:href="@{/css/index.css}">
+  <script type="text/javascript" th:src="@{/js/jquery-1.11.0.min.js}"></script>
+</head>
+
+<body class="ng-scope admin-page" th:classappend="${currentUser != null} ? 'logged-in'">
+  <div class="navbar-wrapper">
+    <div class="navbar-header-wrap">
+      <div class="middle-wrapper">
+        <nav>
+          <h1 class="navbar-title logo"><i class="icon-logo"></i></h1>
+          <i class="icon-angle-right"></i>
+          <div class="navbar-title primary-title"><a href="/apps">我的应用</a></div>
+          <i class="icon-angle-right"></i>
+          <div class="navbar-title secondary-title">管理</div>
+        </nav>
+      </div>
+      <div th:replace="fragments/auth :: bar"></div>
+    </div>
+  </div>
+
+  <div class="middle-wrapper admin-body">
+    <ul class="admin-tabs">
+      <li th:classappend="${tab == 'accounts'} ? 'active'"><a href="/admin?tab=accounts">账号（[[${#lists.size(accounts)}]]）</a></li>
+      <li th:classappend="${tab == 'logs'} ? 'active'"><a href="/admin?tab=logs">操作记录</a></li>
+      <li th:classappend="${tab == 'asc'} ? 'active'"><a href="/admin?tab=asc">App Store 上传（[[${#lists.size(ascUploads)}]]）</a></li>
+    </ul>
+
+    <!-- 账号 -->
+    <div th:if="${tab == 'accounts'}">
+      <table class="table admin-table">
+        <thead>
+          <tr><th>用户名</th><th>角色</th><th>注册时间</th><th>操作次数</th><th>最近操作</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="a : ${accounts}">
+            <td th:text="${a.username}"></td>
+            <td><span th:if="${a.admin}" class="admin-badge">管理员</span><span th:unless="${a.admin}">普通</span></td>
+            <td th:text="${a.createTime} ?: '-'"></td>
+            <td><a th:href="@{/admin(tab='logs',user=${a.username})}" th:text="${a.operationCount}"></a></td>
+            <td th:text="${a.lastOperationTime} ?: '-'"></td>
+            <td class="admin-actions">
+              <a th:href="@{/admin(tab='logs',user=${a.username})}">操作记录</a>
+              <button th:unless="${a.admin}" type="button" class="admin-delete-account"
+                      th:attr="data-id=${a.id},data-name=${a.username}">删除</button>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(accounts)}"><td colspan="6" class="admin-empty">还没有账号</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 操作记录 -->
+    <div th:if="${tab == 'logs'}">
+      <form class="admin-filter" method="get" action="/admin">
+        <input type="hidden" name="tab" value="logs"/>
+        <label>账号
+          <select name="user">
+            <option value="">全部</option>
+            <option th:each="u : ${logAccounts}" th:value="${u}" th:text="${u}" th:selected="${u == selectedUser}"></option>
+            <option value="-" th:selected="${selectedUser == '-'}">未登录</option>
+          </select>
+        </label>
+        <label>操作
+          <select name="action">
+            <option value="">全部</option>
+            <option th:each="x : ${actions}" th:value="${x}" th:text="${x}" th:selected="${x == selectedAction}"></option>
+          </select>
+        </label>
+        <button type="submit" class="btn btn-default btn-sm">筛选</button>
+        <span class="admin-count">共 [[${logTotal}]] 条<th:block th:if="${logTotal > logLimit}">，显示最近 [[${logLimit}]] 条</th:block></span>
+      </form>
+      <table class="table admin-table">
+        <thead>
+          <tr><th>时间</th><th>账号</th><th>操作</th><th>对象</th><th>结果</th><th>IP</th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="e : ${logs}">
+            <td class="admin-nowrap" th:text="${e.time}"></td>
+            <td class="admin-nowrap">
+              <span th:if="${e.account == '-'}" class="admin-muted">未登录</span>
+              <span th:unless="${e.account == '-'}" th:text="${e.account}"></span>
+            </td>
+            <td class="admin-nowrap" th:text="${e.action}"></td>
+            <td th:text="${e.target}"></td>
+            <td th:text="${e.result}"></td>
+            <td class="admin-nowrap" th:text="${e.ip}"></td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(logs)}"><td colspan="6" class="admin-empty">没有符合条件的记录</td></tr>
+        </tbody>
+      </table>
+      <p class="admin-note">1.0.14 之前的记录没有账号，显示为「未登录」。</p>
+    </div>
+
+    <!-- App Store 上传 -->
+    <div th:if="${tab == 'asc'}">
+      <table class="table admin-table">
+        <thead>
+          <tr><th>上传时间</th><th>上传人</th><th>应用</th><th>版本</th><th>打包任务</th><th>App Store Build</th><th>状态</th><th></th></tr>
+        </thead>
+        <tbody>
+          <tr th:each="r : ${ascUploads}">
+            <td class="admin-nowrap" th:text="${r.uploadTime} ?: '-'"></td>
+            <td class="admin-nowrap">
+              <span th:if="${r.uploader != null}" th:text="${r.uploader}"></span>
+              <span th:if="${r.uploader == null}" class="admin-muted" title="1.0.14 之前上传，没有记录账号">未记录</span>
+            </td>
+            <td><span th:text="${r.appName}"></span><br><small class="admin-muted" th:text="${r.bundleID}"></small></td>
+            <td class="admin-nowrap" th:text="${r.version}"></td>
+            <td th:text="${r.job} ?: '-'"></td>
+            <td th:text="${r.ascBuildVersion} ?: '-'"></td>
+            <td><span th:class="'admin-status admin-status-' + ${#strings.toLowerCase(r.status)}" th:text="${r.statusLabel}"></span></td>
+            <td><a th:href="@{'/asc/log/' + ${r.packageId}}" target="_blank">日志</a></td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(ascUploads)}"><td colspan="8" class="admin-empty">还没有上传过 App Store</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="text/javascript" th:src="@{/js/auth.js}"></script>
+  <script type="text/javascript" th:src="@{/js/admin.js}"></script>
+</body>
+
+</html>
