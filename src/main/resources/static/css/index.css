@@ -1400,3 +1400,38 @@ body:not(.logged-in) .auth-only {
     color: #888;
     text-align: center;
 }
+
+/* 密码框右侧的「小眼睛」：点击切换明文/密文（static/js/auth-page.js） */
+.auth-card .pwd-field {
+    position: relative;
+}
+
+.auth-card .pwd-field .form-control {
+    padding-right: 40px;
+}
+
+.auth-card .pwd-toggle {
+    position: absolute;
+    top: 0;
+    right: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #999;
+    cursor: pointer;
+}
+
+.auth-card .pwd-toggle:hover {
+    color: #555;
+}
+
+/* Edge 自带的显示密码按钮会和小眼睛重复 */
+.auth-card input::-ms-reveal,
+.auth-card input::-ms-clear {
+    display: none;
+}
