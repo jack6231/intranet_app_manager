@@ -65,7 +65,7 @@ java -jar build/libs/intranet_app_manager-<version>.jar  # 部署运行
 
 ### 登录（1.0.14，`config/SecurityConfig`）
 
-任何人可注册（`tb_account`，BCrypt）。登录的用途是给操作署名：**删除包、删除应用、清理过期包、上传 App Store** 必须登录（只收 POST + CSRF token），上传人记在 `tb_package.asc_uploader`，`operation.log` 行尾追加账号列。其余接口（浏览、下载、安装、Jenkins 的 `/app/upload`、E2E 的 `/p/byCommit`）不需要登录、不校验 CSRF，行为不变。页面通过 `fragments/auth.html` 注入 token 与导航栏登录入口，`static/js/auth.js` 统一给 ajax 加 token 并处理 401/403。
+任何人可注册（`tb_account`，BCrypt）。登录的用途是给操作署名：**删除包、删除应用、清理过期包、上传 App Store** 必须登录（只收 POST + CSRF token），上传人记在 `tb_package.asc_uploader`，`operation.log` 行尾追加账号列。其余接口（浏览、下载、安装、Jenkins 的 `/app/upload`、E2E 的 `/p/byCommit`）不需要登录、不校验 CSRF，行为不变。删除、清理、上传 App Store 的按钮对所有人显示，未登录时点击弹出登录框（`fragments/auth.html` 的 `loginModal`，可跳注册页），弹窗登录走 ajax，服务端返回登录后新换的 CSRF token，前端换上后接着执行刚才的操作（`static/js/auth.js` 的 `requireLogin`）。
 
 - HTTP 端口不能标 `secure=true`：Tomcat 会给会话 cookie 加 Secure，浏览器在 http 下不收，登录态存不住（见 `Application.httpConnector`）。
 - 本项目继承 `WebMvcConfigurationSupport`，没有 Boot 的 MVC 自动配置：控制器里用 `"redirect:"` 会把 model（含 `CurrentUserAdvice` 的属性）拼进跳转地址，跳转改用 `RedirectView` 并关掉 `exposeModelAttributes`。

@@ -1,5 +1,5 @@
 /**
- * 登录 / 注册页：每个密码框右侧加「小眼睛」，点击切换明文 / 密文
+ * 登录 / 注册页和登录弹窗：每个密码框右侧加「小眼睛」，点击切换明文 / 密文
  */
 (function () {
     var SVG = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';

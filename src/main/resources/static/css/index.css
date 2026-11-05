@@ -1307,11 +1307,6 @@ body {
 }
 
 /* ---------- 登录（1.0.14）---------- */
-/* 未登录时隐藏需要登录的操作；服务端同样会拒绝，这里只是不让人点到 */
-body:not(.logged-in) .auth-only {
-    display: none !important;
-}
-
 .navbar-header-wrap .auth-bar {
     position: absolute;
     top: 0;
@@ -1344,12 +1339,6 @@ body:not(.logged-in) .auth-only {
     padding: 0;
     border: 0;
     background: none;
-}
-
-.release-actions .asc-login {
-    margin-left: 6px;
-    font-size: 12px;
-    color: #2b7de9;
 }
 
 .auth-page {
@@ -1433,5 +1422,53 @@ body:not(.logged-in) .auth-only {
 /* Edge 自带的显示密码按钮会和小眼睛重复 */
 .auth-card input::-ms-reveal,
 .auth-card input::-ms-clear {
+    display: none;
+}
+
+/* 登录弹窗：未登录时点删除 / 上传 App Store 弹出（fragments/auth :: loginModal） */
+.login-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-modal.is-open {
+    display: flex;
+}
+
+.login-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .35);
+}
+
+.login-modal .login-modal-dialog {
+    position: relative;
+    margin: 0;
+    font-size: 14px;
+    text-align: left;
+}
+
+.login-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #999;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.login-modal-close:hover {
+    color: #555;
+}
+
+.login-modal .login-modal-error:empty {
     display: none;
 }

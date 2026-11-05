@@ -105,7 +105,7 @@
                                     <i class="icon-pen"></i> 编辑</a>
                                 <a th:href="@{${baseURL}+'s/'+${app.shortCode}}" target="_blank" class="ng-binding">
                                     <i class="icon-eye"></i> 预览</a>
-                                <button class="btn btn-remove ng-scope auth-only" th:data="${app.id}">
+                                <button class="btn btn-remove ng-scope" th:data="${app.id}">
                                     <i class="icon icon-trash"></i>
                                 </button>
                             </div>
@@ -121,7 +121,9 @@
             <p ng-bind="errors" class="ng-binding"></p>
         </div>
     </div>
+    <div th:replace="fragments/auth :: loginModal"></div>
     <script type="text/javascript" th:src="@{/js/auth.js}"></script>
+    <script type="text/javascript" th:src="@{/js/auth-page.js}"></script>
     <script type="text/javascript">
         var dashboard = document.getElementById("uploadCard")
         dashboard.addEventListener("dragover", function (e) {
@@ -169,9 +171,11 @@
 
         $(".btn-remove").click(function () {
             var url = "/app/delete/" + $(this).attr("data");
-            $.post(url, function (result) {
-                window.location.href=window.location.href
-                window.location.reload
+            requireLogin(function () {
+                $.post(url, function (result) {
+                    window.location.href=window.location.href
+                    window.location.reload
+                });
             });
         });
         $(".appname").click(function () {

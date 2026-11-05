@@ -9,6 +9,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -32,6 +33,9 @@ import java.util.UUID;
  * 浏览、下载、安装、扫码，以及打包机/E2E 调用的 /app/upload、/p/byCommit 都不需要登录，行为与之前一致。
  * 需要登录的接口只收 POST，并校验 CSRF token（页面通过 meta 标签取 token，见 static/js/auth.js）；
  * CSRF 只对这几个接口和登录/注册/退出生效，其余接口不受影响。
+ *
+ * 登录有两个入口：登录页的表单提交（成功/失败都重定向），和页面上的登录弹窗（ajax，返回 JSON）。
+ * 登录成功后 Spring Security 会换一个新的 CSRF token，弹窗登录时把新 token 带回去，页面不用刷新就能接着操作。
  */
 @Configuration
 @EnableWebSecurity
@@ -69,9 +73,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .anyRequest().permitAll()
             .and().formLogin()
                 .loginPage("/login")
-                .successHandler((req, res, auth) -> res.sendRedirect(safeRedirect(req.getParameter("next"))))
-                .failureHandler((req, res, e) -> res.sendRedirect(
-                        "/login?error&next=" + encode(safeRedirect(req.getParameter("next")))))
+                .successHandler((req, res, auth) -> {
+                    if (isAjax(req)) {
+                        writeJson(res, HttpServletResponse.SC_OK, loginSuccessBody(req, auth.getName()));
+                    } else {
+                        res.sendRedirect(safeRedirect(req.getParameter("next")));
+                    }
+                })
+                .failureHandler((req, res, e) -> {
+                    if (isAjax(req)) {
+                        // 200 + success=false：由弹窗自己提示，不触发页面的全局错误处理
+                        writeJson(res, HttpServletResponse.SC_OK, failureBody("用户名或密码错误"));
+                    } else {
+                        res.sendRedirect("/login?error&next=" + encode(safeRedirect(req.getParameter("next"))));
+                    }
+                })
                 .permitAll()
             .and().logout()
                 .logoutUrl("/logout")
@@ -84,11 +100,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .requireCsrfProtectionMatcher(csrfMatcher())
             .and().exceptionHandling()
                 // 受保护接口都是页面 ajax 调用：未登录返回 JSON 401，由 auth.js 统一跳登录页
-                .authenticationEntryPoint((req, res, e) -> writeJson(res, HttpServletResponse.SC_UNAUTHORIZED, "请先登录"))
+                .authenticationEntryPoint((req, res, e) ->
+                        writeJson(res, HttpServletResponse.SC_UNAUTHORIZED, failureBody("请先登录")))
                 // 走到这里只有 CSRF 校验失败（会话过期后页面上的 token 失效）
                 .accessDeniedHandler((req, res, e) -> {
                     if (isAjax(req)) {
-                        writeJson(res, HttpServletResponse.SC_FORBIDDEN, "页面已过期，请刷新后重试");
+                        writeJson(res, HttpServletResponse.SC_FORBIDDEN, failureBody("页面已过期，请刷新后重试"));
                     } else {
                         res.sendRedirect("/login?expired");
                     }
@@ -140,10 +157,28 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         }
     }
 
-    private static void writeJson(HttpServletResponse response, int status, String message) throws IOException {
+    /** 弹窗登录成功：返回用户名和登录后新换的 CSRF token（读取 token 时才会存进会话） */
+    private static Map<String, Object> loginSuccessBody(HttpServletRequest request, String username) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("success", true);
+        body.put("username", username);
+        CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        if (token != null) {
+            body.put("csrfHeader", token.getHeaderName());
+            body.put("csrfParameter", token.getParameterName());
+            body.put("csrfToken", token.getToken());
+        }
+        return body;
+    }
+
+    private static Map<String, Object> failureBody(String message) {
         Map<String, Object> body = new HashMap<>();
         body.put("success", false);
         body.put("message", message);
+        return body;
+    }
+
+    private static void writeJson(HttpServletResponse response, int status, Map<String, Object> body) throws IOException {
         response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
         response.getOutputStream().write(JSON.toJSONString(body).getBytes(StandardCharsets.UTF_8));

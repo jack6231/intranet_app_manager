@@ -113,7 +113,7 @@ function getPackageList() {
                     packageList += '<span class="asc-slot" data="' + id + '"></span>';
                 }
                 // 动态添加删除按钮的显示和隐藏类
-                packageList += '<button class="ng-scope app-delete auth-only ' + deleteButtonClass + '" data="' + id + '">';
+                packageList += '<button class="ng-scope app-delete ' + deleteButtonClass + '" data="' + id + '">';
                 packageList += '<i class="icon-trash"></i>';
                 packageList += '<span class="ng-binding"> 删除 </span>';
                 packageList += '</button>';
@@ -187,11 +187,7 @@ function renderAscState(id, state) {
     var failed = state.status === "FAILED";
     var html = "";
     if (state.available) {
-        if (isLoggedIn()) {
-            html += '<button class="asc-upload" data="' + id + '">' + (failed ? "重新上传 App Store" : "上传 App Store") + '</button>';
-        } else {
-            html += '<a class="asc-login" href="' + loginURL() + '">登录后可上传 App Store</a>';
-        }
+        html += '<button class="asc-upload" data="' + id + '">' + (failed ? "重新上传 App Store" : "上传 App Store") + '</button>';
     }
     if (failed) {
         html += '<span class="asc-label asc-failed" title="' + escapeHtml(state.message) + '">上次上传失败</span>' + logLink;
@@ -200,11 +196,17 @@ function renderAscState(id, state) {
 }
 
 $(document).on("click", ".asc-upload", function () {
-    var id = $(this).attr("data");
+    var button = $(this);
+    requireLogin(function () {
+        uploadToAppStore(button);
+    });
+});
+
+function uploadToAppStore(button) {
+    var id = button.attr("data");
     if (!confirm("确定把这个包上传到 App Store Connect?\nbuild 号由 Xcode 自动递增，上传后不可撤回")) {
         return;
     }
-    var button = $(this);
     button.attr("disabled", "disabled");
     $.post("/asc/upload/" + id, function (result) {
         if (result.success) {
@@ -214,7 +216,7 @@ $(document).on("click", ".asc-upload", function () {
         }
         loadAscStates();
     });
-});
+}
 
 /**
  * 构造数据
@@ -320,10 +322,12 @@ function bindActions() {
         var li = "package_index_" + id;
         console.log(li);
         var self = $("." + li);
-        $.post(url, function (result) {
-            if (result.success) {
-                self.remove();
-            }
+        requireLogin(function () {
+            $.post(url, function (result) {
+                if (result.success) {
+                    self.remove();
+                }
+            });
         });
     });
 
@@ -396,12 +400,18 @@ $(function () {
 
     $("#delete-app").click(function () {
         var url = "/app/delete/" + $(this).attr("data");
-        $.post(url, function (result) {
-            window.location.href = "/apps"
+        requireLogin(function () {
+            $.post(url, function (result) {
+                window.location.href = "/apps"
+            });
         });
     });
 
     $("#clean-btn").click(function () {
+        requireLogin(cleanExpiredPackages);
+    });
+
+    function cleanExpiredPackages() {
         var days = parseInt($("#clean-days").val(), 10);
         if (isNaN(days) || days < 3 || days > 30) {
             toastr.warning("请选择 3–30 之间的天数");
@@ -419,7 +429,7 @@ $(function () {
                 toastr.error("清理失败");
             }
         });
-    });
+    }
 
     // 清理天数抽屉式下拉(3–30 天)
     (function () {

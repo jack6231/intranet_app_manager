@@ -23,5 +23,23 @@
       <a th:href="@{/register(next=${currentPath})}">注册</a>
     </th:block>
   </div>
+
+  <!-- 登录弹窗：未登录时点删除 / 上传 App Store 弹出，登录成功后接着执行刚才的操作（static/js/auth.js） -->
+  <div th:fragment="loginModal" id="login-modal" class="login-modal">
+    <div class="login-modal-backdrop" data-login-close></div>
+    <div class="auth-card login-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="login-modal-title">
+      <button type="button" class="login-modal-close" data-login-close aria-label="关闭">&times;</button>
+      <h2 id="login-modal-title">登录</h2>
+      <p class="auth-hint">删除和上传 App Store 需要登录，操作会记录到账号名下。</p>
+      <p class="auth-error login-modal-error"></p>
+      <form id="login-modal-form">
+        <input class="form-control" name="username" placeholder="用户名" autocomplete="username" required/>
+        <input class="form-control" name="password" type="password" placeholder="密码" autocomplete="current-password" required/>
+        <label class="auth-remember"><input type="checkbox" name="remember-me" checked/> 30 天内自动登录</label>
+        <button class="btn btn-primary btn-block" type="submit">登录</button>
+        <p class="auth-switch">还没有账号？<a th:href="@{/register(next=${currentPath})}">注册</a></p>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
