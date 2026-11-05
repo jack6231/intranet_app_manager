@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <!-- 页面公共的 CSRF token：放在 <head> 靠前位置，会话在响应提交前创建（auth.js 读取后加到 ajax 请求头） -->
+  <th:block th:fragment="meta">
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+  </th:block>
+</head>
+<body>
+  <!-- 导航栏右侧：已登录显示账号 + 退出，未登录显示 登录 / 注册 -->
+  <div th:fragment="bar" class="auth-bar">
+    <th:block th:if="${currentUser != null}">
+      <span class="auth-user" th:text="${currentUser}"></span>
+      <form class="auth-logout" method="post" action="/logout">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <input type="hidden" name="next" th:value="${currentPath}"/>
+        <button type="submit">退出</button>
+      </form>
+    </th:block>
+    <th:block th:if="${currentUser == null}">
+      <a th:href="@{/login(next=${currentPath})}">登录</a>
+      <a th:href="@{/register(next=${currentPath})}">注册</a>
+    </th:block>
+  </div>
+</body>
+</html>

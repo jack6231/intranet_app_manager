@@ -113,7 +113,7 @@ function getPackageList() {
                     packageList += '<span class="asc-slot" data="' + id + '"></span>';
                 }
                 // 动态添加删除按钮的显示和隐藏类
-                packageList += '<button class="ng-scope app-delete ' + deleteButtonClass + '" data="' + id + '">';
+                packageList += '<button class="ng-scope app-delete auth-only ' + deleteButtonClass + '" data="' + id + '">';
                 packageList += '<i class="icon-trash"></i>';
                 packageList += '<span class="ng-binding"> 删除 </span>';
                 packageList += '</button>';
@@ -173,18 +173,25 @@ function escapeHtml(s) {
 
 function renderAscState(id, state) {
     var logLink = '<a class="asc-log" href="/asc/log/' + id + '" target="_blank">日志</a>';
+    // 上传人：鼠标悬停在状态标签上可见（1.0.14 之前上传的没有记录）
+    var uploader = state.uploader ? "上传人 " + state.uploader : "";
     if (state.status === "UPLOADED") {
         var build = state.buildVersion ? " · Build " + escapeHtml(state.buildVersion) : "";
-        return '<span class="asc-label asc-done" title="' + escapeHtml(state.uploadTime) + '">已上传 App Store' + build + '</span>' + logLink;
+        var doneTitle = [uploader, state.uploadTime].filter(Boolean).join(" · ");
+        return '<span class="asc-label asc-done" title="' + escapeHtml(doneTitle) + '">已上传 App Store' + build + '</span>' + logLink;
     }
     if (state.status === "UPLOADING") {
         var progress = state.progress ? "：" + escapeHtml(state.progress) : "中…";
-        return '<span class="asc-label asc-progress">上传 App Store' + progress + '</span>';
+        return '<span class="asc-label asc-progress" title="' + escapeHtml(uploader) + '">上传 App Store' + progress + '</span>';
     }
     var failed = state.status === "FAILED";
     var html = "";
     if (state.available) {
-        html += '<button class="asc-upload" data="' + id + '">' + (failed ? "重新上传 App Store" : "上传 App Store") + '</button>';
+        if (isLoggedIn()) {
+            html += '<button class="asc-upload" data="' + id + '">' + (failed ? "重新上传 App Store" : "上传 App Store") + '</button>';
+        } else {
+            html += '<a class="asc-login" href="' + loginURL() + '">登录后可上传 App Store</a>';
+        }
     }
     if (failed) {
         html += '<span class="asc-label asc-failed" title="' + escapeHtml(state.message) + '">上次上传失败</span>' + logLink;

@@ -6,7 +6,7 @@ plugins {
 apply plugin: 'io.spring.dependency-management'
 
 group = 'org.yzr'
-version = '1.0.13'
+version = '1.0.14'
 sourceCompatibility = '1.8'
 
 configurations {
@@ -33,6 +33,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // 账号登录：删除包/应用、清理、上传 App Store 需要登录（org.yzr.config.SecurityConfig）
+    implementation 'org.springframework.boot:spring-boot-starter-security'
     compile group: 'mysql', name: 'mysql-connector-java', version: '8.0.16'
     compile group: 'com.googlecode.plist', name: 'dd-plist', version: '1.21'
     compile group: 'net.dongliu', name: 'apk-parser', version: '2.6.9'

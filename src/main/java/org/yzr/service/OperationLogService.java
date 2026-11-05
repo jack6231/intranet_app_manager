@@ -26,8 +26,8 @@ import java.util.concurrent.Executors;
 /**
  * 页面操作留痕：只追加写日志文件（默认工作目录下 operation.log），不展示、不入库，追查时 grep 该文件。
  *
- * 每行一条，字段用 tab 分隔：时间 / 操作 / 对象 / 对象id / 结果 / IP / 主机名 / X-Forwarded-For / User-Agent。
- * 平台没有登录，记不到账号；IP 由 DHCP 分配，落到具体的人需对照 IT 的租约记录。
+ * 每行一条，字段用 tab 分隔：时间 / 操作 / 对象 / 对象id / 结果 / IP / 主机名 / X-Forwarded-For / User-Agent / 账号。
+ * 账号是 1.0.14 加登录后追加在行尾的（之前的行没有这一列）；删除、清理、上传 App Store 必须登录，定版等未登录也能操作，账号记 -。
  * IP 反查主机名可能要等 DNS 超时，放到后台单线程做，同时保证写文件不并发。
  */
 @Service
@@ -102,8 +102,9 @@ public class OperationLogService {
             String ip = request.getRemoteAddr();
             String forwardedFor = request.getHeader("X-Forwarded-For");
             String userAgent = request.getHeader("User-Agent");
+            String account = request.getRemoteUser();
             executor.submit(() -> append(formatLine(time, action, target, targetId, result,
-                    ip, resolveHostname(ip), forwardedFor, userAgent)));
+                    ip, resolveHostname(ip), forwardedFor, userAgent, account)));
         } catch (Exception e) {
             e.printStackTrace();
         }

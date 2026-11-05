@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="x-ua-compatible" content="IE=edge">
+  <meta name="renderer" content="webkit">
+  <title th:text="${mode == 'register'} ? '注册' : '登录'">登录</title>
+  <link rel="icon" type="image/x-icon" th:href="@{/images/favicon.ico}" />
+  <link rel="stylesheet" th:href="@{/css/bootstrap.css}">
+  <link rel="stylesheet" th:href="@{/css/index.css}">
+</head>
+
+<body class="auth-page">
+  <div class="auth-card">
+    <h2 th:text="${mode == 'register'} ? '注册账号' : '登录'">登录</h2>
+    <p class="auth-hint">登录后才能删除包、删除应用和上传 App Store，操作会记录到账号名下；下载安装无需登录。</p>
+    <p class="auth-error" th:if="${error != null}" th:text="${error}"></p>
+
+    <form th:if="${mode == 'login'}" method="post" action="/login">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" name="next" th:value="${next}"/>
+      <input class="form-control" name="username" placeholder="用户名" autocomplete="username" required autofocus/>
+      <input class="form-control" name="password" type="password" placeholder="密码" autocomplete="current-password" required/>
+      <label class="auth-remember"><input type="checkbox" name="remember-me" checked/> 30 天内自动登录</label>
+      <button class="btn btn-primary btn-block" type="submit">登录</button>
+      <p class="auth-switch">还没有账号？<a th:href="@{/register(next=${next})}">注册</a></p>
+    </form>
+
+    <form th:if="${mode == 'register'}" method="post" action="/register">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" name="next" th:value="${next}"/>
+      <input class="form-control" name="username" th:value="${username}" placeholder="用户名（建议填真实姓名）"
+             autocomplete="username" maxlength="32" required autofocus/>
+      <input class="form-control" name="password" type="password" placeholder="密码（至少 6 位）" autocomplete="new-password" required/>
+      <input class="form-control" name="confirm" type="password" placeholder="确认密码" autocomplete="new-password" required/>
+      <button class="btn btn-primary btn-block" type="submit">注册并登录</button>
+      <p class="auth-switch">已有账号？<a th:href="@{/login(next=${next})}">登录</a></p>
+    </form>
+
+    <p class="auth-back"><a th:href="${next}">返回</a></p>
+  </div>
+</body>
+
+</html>

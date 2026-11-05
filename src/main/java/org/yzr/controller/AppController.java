@@ -3,6 +3,7 @@ package org.yzr.controller;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.yzr.service.AppService;
@@ -63,7 +64,8 @@ public class AppController {
         return map;
     }
 
-    @RequestMapping("/app/delete/{id}")
+    // 需要登录，见 SecurityConfig.LOGIN_REQUIRED
+    @PostMapping("/app/delete/{id}")
     @ResponseBody
     public Map<String, Object> deleteById(@PathVariable("id") String id, HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();
@@ -85,7 +87,8 @@ public class AppController {
      * @param appID App ID
      * @param days 清理多少天以前的包
      */
-    @RequestMapping("/app/clean/{appID}/{days}")
+    // 需要登录，见 SecurityConfig.LOGIN_REQUIRED
+    @PostMapping("/app/clean/{appID}/{days}")
     @ResponseBody
     public Map<String, Object> clean(@PathVariable("appID") String appID, @PathVariable("days") int days,
                                      HttpServletRequest request) {

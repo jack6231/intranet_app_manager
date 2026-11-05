@@ -270,7 +270,8 @@ public class PackageController {
      * @param id
      * @return
      */
-    @RequestMapping("/p/delete/{id}")
+    // 需要登录，见 SecurityConfig.LOGIN_REQUIRED
+    @PostMapping("/p/delete/{id}")
     @ResponseBody
     public Map<String, Object> deleteById(@PathVariable("id") String id, HttpServletRequest request) {
         Map<String, Object> map = new HashMap<>();

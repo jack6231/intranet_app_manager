@@ -61,6 +61,9 @@ public class Package {
     // 最近一次上传的结果摘要（失败原因等），完整日志在包目录 asc_upload.log
     @Column(length = 1024)
     private String ascMessage;
+    // 最近一次发起上传的账号（1.0.14 起记录，之前的为 NULL）
+    @Column(length = 64)
+    private String ascUploader;
 
     @ManyToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     @JoinColumn(name="appId")
@@ -244,5 +247,13 @@ public class Package {
 
     public void setAscMessage(String ascMessage) {
         this.ascMessage = ascMessage;
+    }
+
+    public String getAscUploader() {
+        return ascUploader;
+    }
+
+    public void setAscUploader(String ascUploader) {
+        this.ascUploader = ascUploader;
     }
 }

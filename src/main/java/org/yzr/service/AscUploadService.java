@@ -133,8 +133,9 @@ public class AscUploadService {
 
     /**
      * 发起上传（异步）。校验不过抛 IllegalStateException，消息直接给前端提示。
+     * @param uploader 发起上传的账号，记到包上，页面和 asc_upload.log 里可见
      */
-    public synchronized void startUpload(String packageId) {
+    public synchronized void startUpload(String packageId, String uploader) {
         Package p = packageDao.findById(packageId)
                 .orElseThrow(() -> new IllegalStateException("包不存在"));
         if (!"ios".equals(p.getPlatform())) {
@@ -157,6 +158,7 @@ public class AscUploadService {
         }
         p.setAscStatus(UPLOADING);
         p.setAscMessage(null);
+        p.setAscUploader(uploader);
         packageDao.save(p);
         progress.put(packageId, "排队中");
         executor.submit(() -> runUpload(packageId));
@@ -218,6 +220,7 @@ public class AscUploadService {
     private void writeLog(Package p, String host, RemoteShell.Result r) {
         try {
             String header = "time=" + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())
+                    + " uploader=" + p.getAscUploader()
                     + " node=" + p.getArchiveNode() + " host=" + host
                     + " exit=" + r.exitCode + (r.timedOut ? " (timeout)" : "") + "\n\n";
             FileUtils.writeStringToFile(new File(PathManager.getFullPath(p) + LOG_FILE),
@@ -233,6 +236,7 @@ public class AscUploadService {
         s.put("available", false);
         s.put("buildVersion", p.getAscBuildVersion());
         s.put("message", p.getAscMessage());
+        s.put("uploader", p.getAscUploader());
         if (p.getAscUploadTime() != null && p.getAscUploadTime() > 0) {
             s.put("uploadTime", new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(p.getAscUploadTime())));
         }
